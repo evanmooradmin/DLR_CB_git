@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="44" height="41" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+  <mx:Script>
+    <![CDATA[
+      /***************************************************************
+      *
+      *  Module Name:
+      *
+      *
+      *  Abstract:
+      *     Контрол содержит кнопки которые необходимы  для переключения режима рисование рукой или набора текста
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+
+      /**
+      * Private methods
+      */
+      private function InitBtnText():void
+      {
+        btnText.selected = true;        
+        btnDrow.selected = false;
+        btnLastic.selected = false;
+      }
+
+      private function InitbtnDrow():void
+      {
+        btnText.selected = false;        
+        btnDrow.selected = true;
+        btnLastic.selected = false;
+      }
+
+      /**
+       * Events handler
+       */
+      private function btnText_Handler(event:MouseEvent):void
+      {
+        InitBtnText();
+      }
+
+      private function btnDrow_Handler(event:MouseEvent):void
+      {
+        InitbtnDrow();
+      }
+
+      private function btnLastic_Handler(event:MouseEvent):void
+      {
+        btnText.selected = false;
+        btnDrow.selected = false;
+        btnLastic.selected = true;
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      /**
+      * Public members/properties
+      */
+      //Делает активной btnDrow кнопку и настройки
+      public function set stateDrowActive(value:Boolean):void
+      {
+        if (value == true)
+          InitbtnDrow();
+        else
+          InitBtnText();
+      }
+
+
+      /**
+      * Public methods
+      */
+    ]]>
+  </mx:Script>
+  <mx:Button id="btnText" x="0" y="0" width="20" height="20" click="btnText_Handler(event)" selected="true" styleName="ButtonDrawingAreaText" />
+  <mx:Button id="btnDrow" x="0" y="21" width="20" height="20" click="btnDrow_Handler(event)" styleName="ButtonDrawingAreaDrow" />
+  <mx:Button id="btnLastic" x="21.5" y="21" width="20" height="20" click="btnLastic_Handler(event)" visible="{!btnText.selected}"
+             styleName="ButtonDrawingAreaLastic" />
+</mx:Canvas>

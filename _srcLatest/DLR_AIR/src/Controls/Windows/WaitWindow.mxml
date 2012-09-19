@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="270" height="104" backgroundColor="#FFFFFF" cornerRadius="6" borderStyle="solid" borderThickness="2" themeColor="#69C5FF" borderColor="#FF3833">
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.core.UIComponent;
+      import mx.managers.PopUpManager;
+      public static function Show(parent:UIComponent, headerText:String):WaitWindow
+      {
+        var waitWindow:WaitWindow = new WaitWindow();
+
+        PopUpManager.addPopUp(waitWindow, parent, true);
+        PopUpManager.centerPopUp(waitWindow);
+
+        waitWindow.lbHeader.text = headerText;
+
+        return waitWindow;
+      }
+
+      public static function Hide(waitWindow:WaitWindow):void
+      {
+        PopUpManager.removePopUp(waitWindow);
+      }
+
+    ]]>
+  </mx:Script>
+
+  <mx:SWFLoader x="48" y="40" source="{EmbededData.inctance.waitWindowSwf}" width="170" height="60" id="swfLoader"/>
+  <mx:Label x="10" y="10" width="246" height="31" id="lbHeader"/>
+</mx:Canvas>

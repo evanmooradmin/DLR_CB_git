@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:ns1="Controls.*"
+   currentState="{state_edit}"
+  verticalScrollPolicy="off" horizontalScrollPolicy="off">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import mx.events.ResizeEvent;
+      import Model.EmbededData;
+      import Model.StateTypes;
+      import Model.Events.StateEvent;
+      import Model.Answers.Answer;
+      import Model.Answers.MatchingAnswer;
+      import Model.Answers.SortingAnswer;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\SortingAnswerViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for sorting answer prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   09-November-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:SortingAnswer;
+      private var _isContinue:Boolean = false;
+
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false;
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        textTo.setStyle("fontFamily", _fontName);
+        textIncorrect.setStyle("fontFamily", _fontName);
+        textCorrect.setStyle("fontFamily", _fontName);
+
+        dropAnswer.fontName = _fontName;
+      }
+
+      public override function FontSize():void
+      {
+        textTo.setStyle("fontSize", _fontSize);
+        textIncorrect.setStyle("fontSize", _fontSize);
+        textCorrect.setStyle("fontSize", _fontSize);
+
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+
+        dropAnswer.fontSize = _fontSize;
+      }
+
+      public override function FontColor():void
+      {
+        textTo.setStyle("color", _fontColor);
+        textIncorrect.setStyle("color", _fontColor);
+        textCorrect.setStyle("color", _fontColor);
+
+        dropAnswer.fontColor = _fontColor;
+      }
+
+      public override function CheckAnswer():void
+      {
+        if (_answer.text == dropAnswer.GetText())
+          SetCorrect();
+        else
+        {
+          SetIncorrect();
+          dispatchEvent(new StateEvent(StateEvent.NEW_STATE, StateTypes.SHOW_ANSWER));
+        }
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function ShowAnswer():void
+      {
+        SetCorrect();
+        textCorrect.htmlText = _answer.answer.toString() + ". " + _answer.text;
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+            return true;
+        return dropAnswer.isDrop;
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        this._answer = answer as SortingAnswer;
+        textTo.htmlText = (answer as SortingAnswer).answer.toString() + ".";
+      }
+
+      public override function GetText():String
+      {
+        return dropAnswer.GetText();
+      }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+        {
+          var userAnswer:String = "";
+          currentState = state_incorrect;
+          if (this._isDeserialize)
+              userAnswer = this._answer.result;
+          else
+              userAnswer = dropAnswer.GetText();
+          
+          textIncorrect.htmlText = textTo.htmlText + " " + userAnswer;
+        }
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+          currentState = state_correct;
+          textCorrect.htmlText = textTo.htmlText + " " + _answer.text;
+        }
+      }
+
+      public override function DefaultFont():void
+      {
+        dropAnswer.DefaultFont();
+
+        textTo.setStyle("fontFamily", "Futura");
+        textCorrect.setStyle("fontFamily", "Futura");
+        textIncorrect.setStyle("fontFamily", "Futura");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._answer.result = dropAnswer.GetText();
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        this._isDeserialize = true;
+      }
+      
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+          <mx:Text id="textTo"/>
+          <ns1:DropAnswerControl id="dropAnswer"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+          <mx:Image id="imgCorrect" source="{EmbededData.inctance.iconCorrect}"/>
+          <mx:Text id="textCorrect" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+          <mx:Image id="imgIncorrect" source="{EmbededData.inctance.iconIncorrect}"/>
+          <mx:Text id="textIncorrect" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+  </states>
+</BaseUIControl>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:ns1="Controls.*"
+   currentState="{state_dropAnswer}"  xmlns:FlowBox="Controls.FlowBox.*"
+  xmlns:controls="Controls.Enviroment.*"  verticalScrollPolicy="off" horizontalScrollPolicy="off"  resize="resizeHandler(event)">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import Model.FactoryRegExp;
+      import mx.events.FlexEvent;
+      import Controls.ActivityControl;
+      import mx.events.ResizeEvent;
+      import Model.EmbededData;
+      import Model.Answers.MatchingAnswer;
+      import Model.Answers.Answer;
+      import Model.Prompts.Prompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\MatchingAnswerViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for matching answer prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   26-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:MatchingAnswer;
+      private var _currentFountSize:int = 0;
+      private var _isShowAnswer:Boolean = false;
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false;
+    
+      private const state_dropAnswer:String = "state_dropAnswer";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+        
+
+      /**
+      * Private methods
+      */
+
+      private function resizeHandler(event:ResizeEvent):void
+      {
+        hBox.width = this.width - hBox.x;
+
+      }
+
+      private function resizeHbox():void
+      {
+        if (textTo.width + dropAnswer.width + textAfter.width < hBox.width)
+        {
+          hBox.width = textTo.width + dropAnswer.width + textAfter.width;
+        }
+      }
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        textTo.setStyle("fontFamily", _fontName);
+        textAfter.setStyle("fontFamily", _fontName);
+        textIncorrect.setStyle("fontFamily", _fontName);
+        textCorrect.setStyle("fontFamily", _fontName);
+        dropAnswer.fontName = _fontName;
+      }
+
+      public override function FontSize():void
+      {
+        textTo.setStyle("fontSize", _fontSize);
+        textAfter.setStyle("fontSize", _fontSize);
+        textIncorrect.setStyle("fontSize", _fontSize);
+        textCorrect.setStyle("fontSize", _fontSize);
+
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+        dropAnswer.fontSize = _fontSize;
+
+        if (this._currentFountSize > _fontSize)
+            resizeHbox();
+        this._currentFountSize = _fontSize;
+
+      }
+
+      public override function FontColor():void
+      {
+        textTo.setStyle("color", _fontColor);
+        textAfter.setStyle("color", _fontColor);
+        textIncorrect.setStyle("color", _fontColor);
+        textCorrect.setStyle("color", _fontColor);
+
+        dropAnswer.fontColor = _fontColor;
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        //Используеться пи отключенной опции Check Answer переменной присваевается true когда включено состояние correct
+        if (_isShowAnswer == true)
+            return true;
+        else
+            return dropAnswer.isDrop;
+
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        this._answer = answer as MatchingAnswer;
+
+        if (_answer.source)
+          img.source = EmbededData.inctance[EmbededData.img + _answer.source];
+
+        if (_answer.existInsertPlace == true)
+        {
+          textTo.htmlText = _answer.textTo;
+          textAfter.htmlText = _answer.textAfter;
+        }
+        else
+          textTo.htmlText = _answer.text;
+          //Пробел здесь конечно нужен как овце боян но если его убрать то при размере шрифта 10 пробадает последнее слово так как
+          //text нехочет коректно ресайзиться. Задать размер элементу text в этом контроле нельзя поэтому....
+          textTo.htmlText +=" ";
+          //Устанавливаем вісоту 0 если нет тескта что бі небіло больших пробелов между контейнерами в которіе надо перетаскивать
+          if (textTo.htmlText == "" ||  textTo.htmlText == " ")
+              textTo.height = 0;
+          if (textAfter.htmlText == "" ||  textAfter.htmlText == " ")
+              textAfter.height = 0;
+      }
+
+      public override function GetText():String
+      {
+        if (_isDeserialize) 
+            return this._answer.result;
+        else
+            return dropAnswer.GetText();
+      }
+
+      public override function SetIncorrect():void
+      {
+        currentState = state_incorrect;
+        var userAnswer:String = "";
+        //если загружаем отчет пользователя то вводим его ответ из модели
+        if(_isDeserialize)
+            userAnswer = this._answer.result;
+        else
+            userAnswer = dropAnswer.GetText();
+        //Текст берем из HtmlText потому что при запуске приложения как модуля параметр text равен Null
+        textIncorrect.htmlText = textTo.HtmlText + ' ' + "<font  color='#" + EmbededData.inctance.iconIncorrectColorHex + "'>" + userAnswer + "</font> "  + ' ' + textAfter.HtmlText;
+      }
+
+      public override function SetCorrect():void
+      {
+        currentState = state_correct;
+        //Текст берем из HtmlText потому что при запуске приложения как модуля параметр text равен Null
+        textCorrect.htmlText = textTo.HtmlText + ' ' + "<font  color='#" + EmbededData.inctance.iconCorrectColorHex + "'>" + _answer.answer + "</font> " + ' ' + textAfter.HtmlText;
+        _isShowAnswer = true;
+      }
+
+      public override function Continue():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+        textTo.setStyle("fontFamily", "Futura");
+        textAfter.setStyle("fontFamily", "Futura");
+        textCorrect.setStyle("fontFamily", "Futura");
+        textIncorrect.setStyle("fontFamily", "Futura");
+      }
+
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._answer.result = dropAnswer.GetText();
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        
+        this._isDeserialize = true;
+         //ставим true, что бы при проверке на заполненость вернуло true
+        this._isShowAnswer = true;
+      }
+      
+      /**
+      * Public members/properties
+      */
+      
+      public function setMaxWidthChildren(value:int):void
+      {
+           hBox.maxWidth = value - hBox.x;
+      }
+
+
+      /**
+      * Public methods
+      */
+
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_dropAnswer}">
+      <mx:AddChild relativeTo="{mainHBox}" creationPolicy="all">
+         <FlowBox:FlowBox id="hBox" verticalAlign="middle"  horizontalAlign="left"    horizontalGap="0" verticalGap="0"
+                            verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+          <controls:TextExended id="textTo" />
+          <ns1:DropAnswerControl id="dropAnswer" />
+          <controls:TextExended id="textAfter" />
+         </FlowBox:FlowBox>
+      </mx:AddChild>
+    </mx:State>
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{mainHBox}" creationPolicy="all">
+         <FlowBox:FlowBox id="hBoxCorrect" verticalAlign="middle" maxWidth="{ActivityControl.MAX_WIDTH - 50}"  verticalScrollPolicy="off" horizontalScrollPolicy="off">
+          <mx:Image id="imgCorrect" source="{EmbededData.inctance.iconCorrect}"/>
+          <mx:Text id="textCorrect" selectable="false"/>
+        </FlowBox:FlowBox>
+      </mx:AddChild>
+    </mx:State>
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{mainHBox}" creationPolicy="all">
+        <mx:HBox id="hBoxIncorrect" verticalAlign="middle" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+          <mx:Image id="imgIncorrect" source="{EmbededData.inctance.iconIncorrect}"/>
+          <mx:Text id="textIncorrect" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+  </states>
+
+  <mx:HBox id="mainHBox" verticalAlign="middle"  verticalScrollPolicy="off" horizontalScrollPolicy="off">
+    <mx:Image id="img"/>
+  </mx:HBox>
+</BaseUIControl>

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" height="100%" width="100%" xmlns:ns1="Controls.*"
+  backgroundColor="#FFFFFF"
+  creationComplete="CreationComplete(event)" verticalScrollPolicy="off" horizontalScrollPolicy="off" preinitialize="preinitializeHandler(event)">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.ScreenSize;
+      import mx.core.Application;
+      import events.ActivityControlEvent;
+      import interfaces.em.EMUserTypes;
+      import Controls.Windows.AboutWindow;
+      import Model.Events.NavigationBarEvent; 
+      import mx.events.FlexEvent;
+      import Model.Preferences;
+      import Model.Activity;
+      import Model.Emc;
+
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\QuizControl.mxml
+      *
+      *  Abstract:
+      *     This is quiz control
+      *
+      *  Author:
+      *     Evgenij Welikij   19-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static var instance:QuizControl;
+      private static var _userType:EMUserTypes;
+	
+      	
+      /**
+      * Private members/properties
+      */
+      private var _activity:Activity;
+      private var _preferences:Preferences;
+      private var _isDone:Boolean = false;
+      
+      private function ResizeScreen(size:ScreenSize):void
+      {
+        if (Application.application.width != size.width || Application.application.height != size.height)
+        {
+          /*centerApplication.xTo = 0;
+          centerApplication.yTo = 0;*/
+
+          (Application.application as Application).maxWidth = size.width;
+          (Application.application as Application).maxHeight = size.height;
+
+          resizeApplication.widthTo = size.width;
+          resizeApplication.heightTo = size.height;
+          centerAndResizeApplication.play();
+        }
+      }
+      
+      //Возвращает тип юзера который в данній момент работает. Используеться в DrawingAreaViewControl
+      public static function get userType():EMUserTypes
+      {
+        return _userType;
+      }
+      
+      
+      /**
+      * Private methods
+      */
+      private function ChangeActivityStyle(preferences:Preferences):void
+      {
+        if (activityControl != null)
+        {
+          activityControl.fontName = preferences.fontName;
+          activityControl.fontSize = preferences.fontSize + Preferences.FontSizeShift;
+          activityControl.fontColor = preferences.fontColor;
+          activityControl.isCheckAnswer = preferences.isCheckAnswer;
+         // ResizeScreen(_preferences.screenSize);
+        }
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function CreationComplete(event:FlexEvent):void
+      {
+        navBar.addEventListener(NavigationBarEvent.CHANGE_FONT_NAME, ChangeFontName_navBar);
+        navBar.addEventListener(NavigationBarEvent.CHANGE_FONT_SIZE, ChangeFontSize_navBar);
+        navBar.addEventListener(NavigationBarEvent.CHANGE_ACTIVITY, ChangeActivity_navBar);
+      }
+
+      private function ChangeFontName_navBar(event:NavigationBarEvent):void
+      {
+        if (event.preferences.fontName == "Default")
+          activityControl.isDefault = true;
+        else
+          activityControl.isDefault = false;
+          
+        activityControl.fontName = event.preferences.fontName;
+      }
+
+      private function ChangeFontSize_navBar(event:NavigationBarEvent):void
+      {
+        activityControl.fontSize = event.preferences.fontSize + Preferences.FontSizeShift;
+      }
+
+      private function ChangeActivity_navBar(event:NavigationBarEvent):void
+      {
+          
+        activityControl.Init(event.activity, _userType);
+      }
+
+      private function Action_activityControlHandler(event:ActivityControlEvent):void
+      {
+        navBar.activity = (event.activity as Activity);
+      }
+
+
+      /**
+      * Initialization
+      */
+      public function Init(activity:Activity, preferences:Preferences, userTypes:EMUserTypes = null):void   
+      { 
+        this._activity = activity;
+        this._preferences = preferences;
+        if (userTypes == null)
+            userTypes = EMUserTypes.EM_Teacher;
+        _userType = userTypes;
+            
+        if (_userType != EMUserTypes.EM_Teacher)
+        {
+             navBar.DeleteYourself();
+             activityControl.y = 0;
+        }
+        else   
+        {     
+          navBar.Init(activity, preferences);
+          navBar.activity = activity;
+        }
+        
+        
+        activityControl.isCheckAnswer = preferences.isCheckAnswer;
+        ChangeActivityStyle(preferences);
+        activityControl.Init(activity, userTypes);
+        //Не забыть поменять константу максимальной ширены в activityControl если меняете сдесь
+       // activityControl.width = 780;
+        
+      
+      }
+      
+      private function preinitializeHandler(event:Event):void
+      {
+         instance = this;
+      }
+      
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      /**
+      * Public members/properties
+      */
+     public function get preferences():Preferences
+     {
+       return this._preferences;
+     }
+	   
+	   public function get isDone():Boolean
+	   {
+	   	return _isDone;
+	   }
+	   public function set isDone(value:Boolean):void
+	   {
+	     _isDone = value;	 
+	   }		
+		 
+		 
+		 public function get score():XML
+     {
+       var xml:XML = new XML(); 
+       //Добовляем общее количество тасков и сколько пользователь заполнил
+       if (_userType == EMUserTypes.EM_Student)     
+            return <Score value={activityControl.countOfFilledPrompts}  total={activityControl.totalCountPromptControls}/>;
+       //Добовляем общее количество тасков и сколько пользователь прошел правельно
+       else if (_userType == EMUserTypes.EM_Teacher_ShowReport)  
+            return <Score  value={activityControl.CountOfCompletePrompts()} total={activityControl.totalCountPromptControls}/>;        
+       return xml;
+     }
+		
+		
+      /**
+      * Public methods
+      */
+      public function ChangePreferences(preferences:Preferences):void
+      {
+        this._preferences = preferences;
+
+        ChangeActivityStyle(preferences);
+
+        if (navBar != null)
+          navBar.preferences = preferences;
+      }
+     
+      //Перестраивает сам себя
+      public function Rebuild():void
+      {
+        Init(_activity,_preferences, _userType);
+      }
+     
+      //Метод вызывает повторное обновление настроек 
+      public function UpdatePreferences():void
+      {
+        ChangeActivityStyle(_preferences);
+      } 
+    
+      public function fitToFullScreen():void
+      {
+        _preferences.isFullScreen = true;   
+        this.ResizeScreen(_preferences.screenSize);
+      }
+  
+      public function fitToDefaultScreen():void
+      {
+        _preferences.isFullScreen = false;   
+        this.ResizeScreen(_preferences.screenSize);
+      }
+      
+      public function SaveScore():void
+      {
+        activityControl.SaveScore();  
+      }
+      
+     
+    ]]>
+  </mx:Script>
+   <mx:Sequence target="{Application.application}" id="centerAndResizeApplication">
+       <mx:Resize id="resizeApplication" />
+    </mx:Sequence>
+
+    
+  <ns1:NavigationBar x="-1" y="0" width="100%" id="navBar" />
+  <ns1:ActivityControl x="10" y="42" width="100%" height="100%" id="activityControl" horizontalScrollPolicy="off"
+    action="Action_activityControlHandler(event)"/>
+  <mx:Canvas width="100%" height="100%" backgroundColor="#FCFBFB" backgroundAlpha="0.6" id="hideCanvas" visible="false" />
+</mx:Canvas>

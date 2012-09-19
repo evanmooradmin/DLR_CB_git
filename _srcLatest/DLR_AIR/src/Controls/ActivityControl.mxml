@@ -1,0 +1,966 @@
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+           width="100%" height="100%" 
+           styleName="listVerticalScrollBar" 
+           currentState="{state_main}"
+           preinitialize="preinitializeHandler()"
+           creationComplete="creationCompleteHandler(event)">
+  <mx:Metadata>
+    [Event(name="action", type="events.ActivityControlEvent")]
+    [Event(name="customInvalidateSize", type="flash.events.Event")]
+  </mx:Metadata>
+
+  <mx:Script>
+    <![CDATA[ 
+      import Model.Events.VerticalScrollCreate;
+      import Model.Events.VerticalScrollCreate;
+      import events.ActivityControlEvent; 
+      import Model.Prompts.ReadingAssignment;
+      import mx.controls.Label;
+      import interfaces.IResult;
+      import Model.Emc;
+      import interfaces.em.EMUserTypes;
+      import mx.managers.CursorManager;
+      import Model.EmbededData;
+      import mx.events.ResizeEvent;
+      import Controls.PromptControls.SentenceEvaluationControl;
+      import Model.Prompts.SentenceEvaluation;
+      import Controls.PromptControls.CloseSentenceControl; 
+      import Model.Prompts.CloseSentence;
+      import Controls.PromptControls.ActivityMatchingControl;
+      import Model.Prompts.ActivityMatching;
+      import mx.core.Application;
+      import Controls.PromptControls.SortingGraphicsControl; 
+      import Model.Prompts.SortingGraphics;
+      import Model.Events.ActivityDirectionsEvent;
+      import mx.events.ChildExistenceChangedEvent;
+      import mx.events.EffectEvent;
+      import mx.binding.utils.BindingUtils;
+      import mx.effects.easing.Bounce;
+      import mx.core.UIComponent;
+      import mx.effects.Iris;
+      import mx.events.FlexEvent;
+      import Controls.PromptControls.DrawingAreaControl;
+      import Model.Prompts.DrawingArea;
+      import Controls.PromptControls.FixCapitalsControl;
+      import Model.Prompts.FixCapitals;
+      import Controls.PromptControls.SortingControl;
+      import Model.Prompts.Sorting;
+      import Controls.PromptControls.YesOrNoControl;
+      import Model.Prompts.YesOrNo;
+      import Controls.PromptControls.MatchingControl;
+      import Model.Prompts.Matching;
+      import Controls.PromptControls.Open_endedWritingPromptControl;
+      import Controls.PromptControls.ActivityDirectionsControl;
+      import Model.Prompts.Open_endedWritingPrompt;
+      import Model.Prompts.ActivityDirections;
+      import Controls.Windows.AlertWindow;
+      import Model.StateTypes;
+      import Controls.PromptControls.MultipleChoiceControl;
+      import Controls.PromptControls.PromptControl;
+      import Model.Prompts.MultipleChoice;
+      import Model.Prompts.Prompt;
+      import Model.Activity;
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\ActivityControl.mxml
+      *
+      *  Abstract:
+      *     This is activity control
+      *
+      *  Author:
+      *     Evgenij Welikij   19-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static const MAX_WIDTH:int = 989;
+
+      private static var _isCheckAnswer:Boolean = true;
+      private static var _userType:EMUserTypes;
+      private static var _isShowRepotFromTeacher:Boolean = false;
+      private static var _instance:ActivityControl;
+      //Перменная со стремным названием нужна для того что бы когда у контролов вызываеться состояние CheckAnswer в нем проверяеться
+      //данная переменная и если она равна True то выполнение кода методов CheckAnswer заканчиваеться только тем, что записываем результат в isCorrect каждого
+      //контрола
+      private var _needScroreReport:Boolean = false;      
+      //Если равно true значит контролы загружаються в состоянии для рисования 
+      public static var isDrawingAreaUsing:Boolean = false;
+      
+      //ВРЕМЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ХРАНЕННИЯ ОТВЕТОВ ПОЛЬЗОВАТЕЛЯ
+      private var _xml:XML;  
+      
+      
+      public static function get isCheckAnswer():Boolean
+      {
+        return _isCheckAnswer;
+      }
+      
+      public static function get instance():ActivityControl
+      {
+        if (!_instance)
+          _instance = new ActivityControl();
+
+        return _instance;
+      }
+      
+      //Возвращает тип юзера которій в данній момент работает. Используеться в DrawingAreaViewControl
+      public static function get userType():EMUserTypes
+      {
+        return _userType;
+      }
+      
+      //Метод используеться во всех контролах в методе LoadREsults
+      public static function get isShowRepotFromTeacher():Boolean
+      {
+        return _isShowRepotFromTeacher;
+      }   
+      
+      
+      /**
+      * Private members/properties
+      */
+      protected var _activity:Activity;
+      protected var _currentPromptIndex:int = 0;
+
+      [Bindable]
+			protected var _currentPromptControl:PromptControl;      // текущий контролл
+
+			protected var _promptControls:Array = new Array();
+      protected var _state:StateTypes;
+
+      protected var _fontName:String;
+      protected var _fontSize:int;
+      protected var _fontColor:int;
+      
+      private var _fontNameChanged:Boolean = false;
+      private var _fontSizeChanged:Boolean = false;
+      private var _fontColorChanged:Boolean = false;
+
+      protected var _isDefaultFont:Boolean = true;
+
+      private const state_main:String = "state_main";
+      private const state_backButton:String = "state_backButton";
+
+      private var _isCreatedVerticalScroll:Boolean = false;
+      private var _verticalScrollwidth:int;
+
+      private var _fingerCursor:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+      
+      //Переменная содержит тип подльзователя который в данный момент загружен 
+      //это нужно для определения как отображать контролы
+      //если тип  EM_Teacher то действуют все состояния и контролы строятся один за одним как оьычно,
+      //в противном случае контролы строятся и выводяться сразу все
+      private var _type:EMUserTypes;
+      
+      private function get isLast():Boolean
+      {
+        return _currentPromptIndex == _activity.prompts.length || _currentPromptIndex == -1;
+      }
+
+      private function get isSimple():Boolean
+      {
+        for each (var item:PromptControl in _promptControls)
+          if (!item.IsSimple())
+            return false;
+        return true;
+      }
+
+
+
+      /**
+      * Private methods
+      */
+      private function Update():void
+      {
+        fontName =_fontName;
+        fontSize = _fontSize;
+        fontColor = _fontColor;
+      }
+      
+      //Метод удаяет промпт контрол из контейнра и массива который его содержит и возвращает 
+      //пердыдущий промпт контрол если он есть
+      private function DeletePromptControl(promptControl:PromptControl):PromptControl
+      {
+        var previousPrompt:PromptControl;
+        for (var i:int=0; i<_promptControls.length; i++)
+          if (promptControl == _promptControls[i] as PromptControl)
+          {
+              _promptControls.splice(i,1);
+              break;
+          }
+       //Удаляем первый контрол из контейнера
+       promptControl.DeleteYourself();
+       //Если существует предыдущий контрол возвращаем его
+       if (_promptControls[i-1] != null)
+       {
+            previousPrompt = _promptControls[i-1] as PromptControl;
+            _currentPromptIndex = i;
+            return previousPrompt
+       } 
+       else 
+           _currentPromptIndex = -1;  
+       return  null 
+      }
+      
+      private function BuildPrompt(prompt:Prompt):void
+      {
+        _currentPromptControl =  PromptControl.BuildPromptControl(prompt);
+        if (prompt is ActivityDirections)
+          _currentPromptControl.addEventListener(ActivityDirectionsEvent.CREATE_PROMPT, CreatePrompt_currentPromptControlHandler);
+        else if (prompt is CloseSentence)
+          _currentPromptControl = new CloseSentenceControl(prompt as CloseSentence);
+        else if (prompt is SentenceEvaluation)
+          _currentPromptControl = new SentenceEvaluationControl(prompt as SentenceEvaluation);
+
+        _currentPromptControl.isDefault = _isDefaultFont;
+        _currentPromptControl.maxWidth = ActivityControl.MAX_WIDTH;
+        _currentPromptControl.setStyle("right", "150");
+        _currentPromptControl.x = 150;
+       /// _currentPromptControl.setStyle("backgroundColor", 0xFF0000);
+
+
+        // add other type prompt here
+
+        _state = _currentPromptControl.state;
+
+        // set styles
+        _currentPromptControl.fontName = _fontName;
+        _currentPromptControl.fontSize = _fontSize;
+        _currentPromptControl.fontColor = _fontColor;
+        _currentPromptControl.Bold();
+        _promptControls.push(_currentPromptControl);
+        vbPrompts.addChild(_currentPromptControl);
+
+        _currentPromptControl.addEventListener(FlexEvent.CREATION_COMPLETE, CreationComplete_currentPromptControlHandler);
+      }
+
+      // build prompt control by index in prompts array
+      // return new prompt index or -1 if error
+      private function BuildPromptByIndex(index:int):int
+      {
+        if (index >= 0 && index < _activity.prompts.length)
+        {
+          BuildPrompt(_activity.prompts[index]);
+          return index + 1;
+        }
+
+        return -1;
+      }
+
+      private function FocusNewPrompt():void
+      {
+        verticalScrollPosition = maxVerticalScrollPosition;
+      }
+
+      //Метод строит все PromtControl и возвращает индекс последнего 
+      private function BuildAllPromtControls():int
+      {
+        var index:int = 0;
+        for (var i:int=0; i < this._activity.prompts.length; i++)
+             BuildPrompt(this._activity.prompts[i]);
+              
+        return  i;
+      }  
+      //Метод пробегавет по построенным контролам и возвращает true если они все заполнены
+      public function isAllControlComplete():Boolean
+      {
+        var isComplete:Boolean = true;
+        QuizControl.instance.isDone = true;
+        for each (var item:PromptControl in this._promptControls)
+        {
+          if (item.IsComplete() == false)
+              isComplete  = false;
+        }
+        QuizControl.instance.isDone = false;
+        return  isComplete;
+      }
+      
+      //Метод пробегает по всем построенным на данный момент промт контролам и записывает данные которые ввел пользователь в модель
+      private function SaveDataUserResult():void
+      {
+        for each (var item:PromptControl in this._promptControls)
+                   item.SaveResults();
+      }
+      
+      //Метод пробегает по всем построенным на данный момент промт контролам и загружает данные которые ввел пользователь в контролы 
+      // при этом сразу вызываеться проверка введенных ответов CheckAnswer если передается true 
+      private function LoadDataUserResult(needCheckAnswer:Boolean = false):void
+      {
+        for each (var item:PromptControl in this._promptControls)
+                  item.LoadResults(needCheckAnswer);
+      }
+      
+      
+      //Метод вызывает у всех построенных контролов проверку ответа 
+      private function checkAnswerFromScore():void
+      {
+      	 QuizControl.instance.isDone = true;
+         for each (var promptControl:PromptControl in this._promptControls)
+         {
+           if (promptControl is ActivityDirectionsControl)
+              (promptControl as ActivityDirectionsControl).checkAnswerFromScore();
+           else 
+               promptControl.CheckAnswer();
+         }
+         QuizControl.instance.isDone = false;
+      } 
+         
+      /**
+      * Events handler
+      */
+      private function CreationComplete_this_Handler():void
+      {
+        ScrollConteiner.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_scrollContainerHandler); 
+        Update();
+      }
+      
+      private function CreationComplete_currentPromptControlHandler(event:FlexEvent):void
+      {
+        showPromptEffect.play([event.currentTarget as UIComponent]);
+      }
+
+      // если контролл создается внутри ActivityDirectionControls
+      private function CreatePrompt_currentPromptControlHandler(event:ActivityDirectionsEvent):void
+      {
+        showPromptEffect.play([event.promptControl]);
+      }
+
+      private function ChildAdd_vbPromptsHandler(event:ChildExistenceChangedEvent):void
+      {
+        callLater(FocusNewPrompt);
+      }
+
+      private function Click_btnContinue(event:MouseEvent):void
+      {
+        var isCanEnterState_backButton:Boolean = true;
+        dispatchEvent(new ActivityControlEvent(ActivityControlEvent.ACTION, _activity));
+
+        try
+        {
+          _state = _currentPromptControl.state;
+          
+          if (_currentPromptIndex != -1)
+          {
+            // check current state for prompt control
+            switch (_state)
+            {
+              case StateTypes.CHECK_ANSWER:
+                {
+                  _currentPromptControl.CheckAnswer();
+                  break;
+                }
+
+              case StateTypes.SHOW_ANSWER:
+                {
+                  _currentPromptControl.ShowAnswer();
+                  break;
+                }
+
+              case StateTypes.CONTINUE:
+                {
+
+                  _currentPromptControl.Continue();
+
+                  // эта ситуация возникает в том случае, если
+                  // в контрола ActivityDirections несколько дочерних контроллов
+                  if (_currentPromptControl.isYouCanRemoveControl)
+                  {
+                    if (!isSimple || !isLast)
+                      _currentPromptControl.Disable();
+
+                    _currentPromptIndex = BuildPromptByIndex(_currentPromptIndex);
+                  }
+                  break;
+                }
+              case StateTypes.NEXT:
+                {
+                  _currentPromptControl.Continue();
+                  break;
+                }
+            }
+           //Берем текущее состояние контрола
+            _state = _currentPromptControl.state; 
+            // if last prompt change label to "Show All"
+            if (_currentPromptIndex == -1)
+            {
+              if (this.isLast)
+                btnContinue.label = "Show All";
+              else
+              {
+                for each (var item:PromptControl in _promptControls)
+                  item.Enable();
+
+                currentState = state_backButton;
+                btnContinue.label = "Done";
+                btnContinue.removeEventListener(MouseEvent.CLICK, Click_btnContinue);
+                btnContinue.addEventListener(MouseEvent.CLICK, Click_Done);
+
+                canButtons.width = btnContinue.width;
+              }
+            }
+            else
+            {
+              // если это последний промпт и последнее состояние,
+              // то переводим кнопку Continue в режим ShowAll
+              if (_currentPromptControl.IsFinalState() && _currentPromptIndex == _activity.prompts.length
+                && _state != StateTypes.NEXT)
+              {
+
+                if (_activity.countChildPrompts <= 1)
+                {
+                  isCanEnterState_backButton = false;
+               //   currentState = state_main;
+                  btnContinue.label = "Done";
+                  btnContinue.removeEventListener(MouseEvent.CLICK, Click_btnContinue);
+                  btnContinue.addEventListener(MouseEvent.CLICK, Click_Done);
+                 //Кнопки  Done и Back вместе быть не могут потому удаляем кнопку   Back
+                 if (btnBack != null)
+                     canvBtnBack.removeAllChildren();
+                  canButtons.width = btnContinue.width;
+                }
+                else
+                {
+                  btnContinue.label = "Show All";
+                  _currentPromptControl.NextState();
+                  _currentPromptIndex = -1;
+                }
+              }
+              else
+                btnContinue.label = _state.operationName;
+            }
+            if (isCanEnterState_backButton == true)
+                currentState = state_backButton;
+          }
+          else
+          {
+            _currentPromptControl.Continue();
+
+            // press "Show All"
+            for each (item in _promptControls)
+              item.Enable();
+
+            currentState = state_backButton;
+            btnContinue.label = "Done";
+            btnContinue.removeEventListener(MouseEvent.CLICK, Click_btnContinue);
+            btnContinue.addEventListener(MouseEvent.CLICK, Click_Done);
+           // btnBack.visible = false;
+            canButtons.width = btnContinue.width;
+          }
+        }
+        catch (error:Error)
+        {
+          AlertWindow.Show(this, "OOPS!", error.message);
+        }
+      }
+      
+      
+      
+      private function Click_btnBack(event:MouseEvent):void
+      {
+        if (_currentPromptIndex == -1)
+        {
+          for each (var item:PromptControl in _promptControls) 
+              item.Disable();
+          _currentPromptIndex = _promptControls.length;
+          _currentPromptControl.isStartState = false;
+        }
+        //Если контрол первый или имеет простое состояние
+        if (_currentPromptControl.isStartState == false || _promptControls.length == 1)
+        {
+          _currentPromptControl.DeleteCurrentTask();
+          if (_currentPromptControl.isYouCanRemoveControl)
+          {
+              //Удаляем первый текущий контрол 
+             _currentPromptControl =  DeletePromptControl(_currentPromptControl);
+             if (_currentPromptIndex == -1)
+                _currentPromptIndex = BuildPromptByIndex(0);
+             else 
+                _currentPromptIndex = BuildPromptByIndex(_currentPromptIndex); 
+          }
+        }
+        else
+        {
+          //Удаляем текущий таск
+          _currentPromptControl.DeleteCurrentTask();
+          if (_currentPromptControl.isYouCanRemoveControl)
+          {
+              
+              //Удаляем текущий контрол
+             _currentPromptControl =  DeletePromptControl(_currentPromptControl);
+             if (_currentPromptControl == null)
+                 return;
+              _currentPromptControl.DeleteCurrentTask();    
+              if (_currentPromptControl.isYouCanRemoveControl)
+              {
+                  //Удаляем текущий контрол
+                  _currentPromptControl =  DeletePromptControl(_currentPromptControl);
+                  //Индекс промта начинаеться с 0 
+                   if (_currentPromptIndex == -1)
+                        _currentPromptIndex = BuildPromptByIndex(0);
+                   else 
+                       _currentPromptIndex = BuildPromptByIndex(_currentPromptIndex); 
+              }
+          }
+        }
+        btnContinue.label = _currentPromptControl.state.operationName;
+        
+        //Если это первый контрол и он не содержит в сеье контролов 
+        if (_promptControls.length == 1 && _currentPromptControl.isYouCanRemoveControl)
+            currentState = state_main;
+      }
+
+      private function Click_Done(event:MouseEvent):void
+      {
+        //Ловит модуль и в методе  Close  вызывает сохранение xml  в хранилище
+        dispatchEvent(new ActivityControlEvent(ActivityControlEvent.DONE, _activity));
+      }
+      
+      //Метод отвечает за сохранение отчета о работе студента 
+      public function SaveData():void
+      {
+        try
+        {
+            //сообщаем апликейшену о том что мы закнчили проходить урок, там мы обновляем дату 
+         // dispatchEvent(new ActivityControlEvent(ActivityControlEvent.CONTINUE, _activity));
+         if (_activity != null)
+             _activity.date = new Date(); 
+            //Сохраняем результы которые ввел пользвоатель в модель   
+         SaveDataUserResult();   
+        }
+        catch(error:Error)
+        {
+          AlertWindow.Show(this, "OOPS!", error.message);
+        }
+      
+      }
+      
+      //Метод отвечает за загрузку отчета о работе студента 
+      public function LoadReport(needCheckAnswer:Boolean = false):void
+      {
+        try
+        {
+          //Загружаем принятую XML
+        //    Emc.instance.deserialize();
+          //Загружаем результы которые ввел пользватель в модель   
+          LoadDataUserResult(needCheckAnswer);   
+        }
+        catch(error:Error)
+        {
+          AlertWindow.Show(this, "OOPS!", error.message);
+        }   
+        
+      }
+
+     
+//       //Метод деспачит событие о появлении вертикального скрола
+//      private function UpdateComplete_scrollContainerHandler(event:FlexEvent):void
+//      {
+//        if (this.verticalScrollBar != null && _isCreatedVerticalScroll == false)
+//        {
+//            _isCreatedVerticalScroll = true;
+//            _verticalScrollwidth =  this.verticalScrollBar.width; 
+//            this.verticalScrollBar.height = this.verticalScrollBar. height + 100;
+//            dispatchEvent(new VerticalScrollCreate(VerticalScrollCreate.VERCTICAL_SCROLL_CREATE, true, this.verticalScrollBar.width));
+//          
+//        }
+//        else if (this.verticalScrollBar == null && _isCreatedVerticalScroll == true)
+//        {
+//           _isCreatedVerticalScroll = false;
+//           _verticalScrollwidth = 0;
+//           dispatchEvent(new VerticalScrollCreate(VerticalScrollCreate.VERCTICAL_SCROLL_CREATE, false, 0));
+//        }
+//      }
+
+      
+//      private function resize_ScrollConteinerHandler(event:ResizeEvent):void
+//      {
+//          if (this.ScrollConteiner.height > this.height)
+//              this._isCreatedVerticalScroll = true;
+//          else
+//              this._isCreatedVerticalScroll = false;
+//      }
+
+      
+//      private function resize_ScrollConteinerHandler(event:ResizeEvent):void
+//      {
+//          if (this.ScrollConteiner.height > this.height)
+//              this._isCreatedVerticalScroll = true;
+//          else
+//              this._isCreatedVerticalScroll = false;
+//      }
+
+      private function rollOver_buttonHandler(event:MouseEvent):void
+      {
+        _cursorID = CursorManager.setCursor(_fingerCursor);
+      }
+
+      private function rollOut_buttonHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorID);
+      }
+
+      private function resize_vbPromptsHandler(event:ResizeEvent):void
+      {
+        // для активити с этим ID выключаем автоматическую прокрутку
+        // http://em-mantis.uarank.com/view.php?id=7170
+        if (this._type == EMUserTypes.EM_Teacher && _activity.ID != "13410425")
+            verticalScrollPosition = this.maxVerticalScrollPosition
+      }
+      
+      /**
+      * Initialization
+      */
+      // type передаеться из кланбраузера, если тип  EM_Teacher то действуют все состояния и контролы строятся один за одним
+      //, в противном случае контролы строятся и выводяться сразу все
+      public function Init(activity:Activity, type:EMUserTypes = null):void
+      {
+        _instance = this;
+        if (type == null)
+            type = EMUserTypes.EM_Student;
+        
+            
+        this._activity = activity;
+        this._type = type;
+        _userType = type;
+         //Определяем можем показываем ли мсы отчет учителю при загрузке данных
+        if (_userType == EMUserTypes.EM_Teacher)
+            _isShowRepotFromTeacher = true;
+        
+        _promptControls = new Array();
+        vbPrompts.removeAllChildren();
+
+        isDefault = true;
+
+        if(canButtons.width >= (btnContinue.width + btnBack.width + 50))
+             canButtons.width = btnContinue.width;
+        currentState = state_main;
+
+        _currentPromptIndex = 0;
+        
+        //Если зашел учитель то выводим как обычно 
+        if (this._type == EMUserTypes.EM_Teacher)
+        {  
+          _currentPromptIndex = BuildPromptByIndex(_currentPromptIndex);
+          _state = _currentPromptControl.state;
+        
+          btnContinue.label = _state.operationName;
+          btnContinue.removeEventListener(MouseEvent.CLICK, Click_Done);
+          btnContinue.addEventListener(MouseEvent.CLICK, Click_btnContinue); 
+        }
+        else 
+        {
+          //Если зашел студент то строим все промт контролы
+           _currentPromptIndex = BuildAllPromtControls();
+           //Скрываем кнопки
+           canButtons.visible = false;
+           canButtons.height = 0;
+        }
+      }
+		
+	  private function preinitializeHandler():void
+	  {
+	  	_instance = this;
+	  }	
+
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+        event.currentTarget.removeEventListener(FlexEvent.CREATION_COMPLETE, creationCompleteHandler);
+        ScrollConteiner.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_scrollContainerHandler);
+      }
+      
+      //Метод деспачит событие о появлении вертикального скрола
+      private function UpdateComplete_scrollContainerHandler(event:FlexEvent):void
+      {
+        var isChange:Boolean = ((verticalScrollBar == null && _isCreatedVerticalScroll == true) 
+                             || (verticalScrollBar != null && _isCreatedVerticalScroll == false));
+        
+        if(isChange)
+        {
+          _verticalScrollwidth = verticalScrollBar == null ? 0 : verticalScrollBar.width;
+          _isCreatedVerticalScroll = !_isCreatedVerticalScroll;
+//          dispatchEvent(new VerticalScrollCreate(VerticalScrollCreate.VERCTICAL_SCROLL_CREATE, _isCreatedVerticalScroll));
+          _changeSizePromptContainer = true;
+          invalidateSize();
+          invalidateDisplayList();
+        }
+      }
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+      protected override function commitProperties():void
+      {
+        if (_fontNameChanged)
+            FontName();
+        if (_fontSizeChanged)
+            FontSize();
+        if (_fontColorChanged)
+            FontColor();
+            
+        _fontNameChanged = false;
+        _fontSizeChanged = false;  
+        _fontColorChanged = false;
+     
+        super.commitProperties(); 
+      }
+
+      
+      private var _changeSizePromptContainer:Boolean;
+      protected override function measure():void
+      {
+        super.measure();
+        if(_changeSizePromptContainer)
+        {
+          vbPrompts.width = calculateChildWidth(vbPrompts);
+          _changeSizePromptContainer = false;
+          dispatchEvent(new Event("customInvalidateSize"));
+        }
+      }
+
+
+      /**
+      * Public members/properties
+      */
+    
+      
+      public function set isDefault(value:Boolean):void
+      {
+        _isDefaultFont = value;
+
+       //Надо пробегать по всем контролам
+
+        for each (var item:PromptControl in _promptControls)
+          item.isDefault = value;
+      }
+
+      public function set isCheckAnswer(value:Boolean):void
+      {
+        _isCheckAnswer = value;
+        if (_currentPromptControl != null)
+        {
+        	if (value == false)
+        	  	this._currentPromptControl.setStateForCheckAnswer(value);
+          else 
+              this._currentPromptControl.setStateForCheckAnswer(value);
+        }    
+      }
+
+      public function get isCreatedVerticalScroll():Boolean
+      {
+        return this._isCreatedVerticalScroll;
+      }
+      
+
+//      public function get verticalScrollwidth():int 
+//      {
+//        return this._verticalScrollwidth;
+//      }
+
+      public function get verticalScrollwidth():int
+      {
+        return this._verticalScrollwidth;
+      }
+
+      
+
+      public function get needScoreReport():Boolean
+      {
+        return this._needScroreReport;
+      }
+      
+      public function set fontName(name:String):void
+      {
+        this._fontName = name;
+        this._fontNameChanged = true;
+        invalidateProperties();
+      }
+  
+      public function set fontSize(size:int):void
+      {
+        this._fontSize = size;
+        this._fontSizeChanged = true;
+        invalidateProperties();
+      }
+      
+      public function set fontColor(color:int):void 
+      {
+        this._fontColor = color;
+        this._fontColorChanged = true;
+        invalidateProperties();
+      }
+      
+      /**
+      * Public methods
+      */
+
+      
+      public function calculateChildWidth(child:DisplayObject):Number
+      {
+        var localPosition:Point = child.localToGlobal(new Point());
+        var globalPosition:Point = QuizControl.instance.globalToLocal(localPosition);
+        return ActivityControl.MAX_WIDTH - globalPosition.x - verticalScrollwidth;
+      }
+      
+      public function FontName():void
+      {
+        for each (var promptControl:PromptControl in vbPrompts.getChildren())
+            promptControl.fontName = _fontName;
+      }
+
+      public function FontSize():void
+      {
+        for each (var promptControl:PromptControl in vbPrompts.getChildren())
+          promptControl.fontSize = _fontSize;
+      }
+
+      public function FontColor():void
+      {
+        for each (var promptControl:PromptControl in vbPrompts.getChildren())
+          promptControl.fontColor = _fontColor;
+      }
+     
+    //Количество заполненых промтов
+     public virtual function get countOfFilledPrompts():int
+     {
+       var counter:int = 0;
+       for each (var promptControl:PromptControl in _promptControls)
+                counter += promptControl.countOfFilledPrompts;
+       return counter;          
+     }
+    
+     //Общее количество промтов
+     public virtual function get countTotalPromptControls():int
+     {
+       return _promptControls.length     
+     }    
+     
+      //Метод возвращает количество промт контролов   
+      public function get totalCountPromptControls():int
+      {
+        var counter:int = 0;
+        for each (var promptControl:PromptControl in _promptControls) 
+        {
+          if (!(promptControl is ReadingAssignment))
+             counter += promptControl.countTotalPromptControls; 
+        }
+        return counter;
+      }
+      
+      //Метод возвращает количество правельных ответов пользователя
+      public function CountOfCompletePrompts():int
+      {
+        this.checkAnswerFromScore();
+        var counter:int = 0;
+        for each (var promptControl:PromptControl in this._promptControls)
+                 counter += promptControl.countOfCompletePrompts;
+        return counter;
+      }
+     
+      public function SaveScore():void
+      {
+       for each (var promptControl:PromptControl in this._promptControls)
+                 promptControl.SaveScore();
+      }
+        
+      //      //ВРЕМЕННЫЕ МЕТОДЫ
+      private function clikSave(event:MouseEvent):void
+      {
+     //   this.SendReport();
+     //   _xml = _activity.serialize();
+      }
+//      //ВРЕМЕННЫЕ МЕТОДЫ
+//      private function clikLoad(event:MouseEvent):void
+//      {
+//        Init(this._activity);
+//        (_activity).deserialize(_xml);
+//         LoadReport(false);            
+//      }
+//      
+//      private function clikCheckAnswer(event:MouseEvent):void
+//      {
+//        Init(this._activity);
+//        _userType = EMUserTypes.EM_Student;
+//        (_activity).deserialize(_xml);
+//        LoadReport(true);   
+//      }
+//      
+//      private function clikCheckAnswerTeaher(event:MouseEvent):void
+//      {
+//        Init(this._activity);
+//        _userType = EMUserTypes.EM_Teacher;
+//        (_activity).deserialize(_xml);
+//        LoadReport(true);   
+//     //   for each (var item:PromptControl in this._promptControls)
+//     //             item.ShowResult();
+//      }
+      
+      
+    ]]>
+  </mx:Script>
+
+  <mx:Parallel id="showPromptEffect"  >
+    <mx:Resize duration="300" heightFrom="0" id="showResizeEffect"/>
+    <mx:Sequence>
+      <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0"/>
+      <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1"/>
+    </mx:Sequence>
+  </mx:Parallel>
+
+  <mx:states>
+    <mx:State name="{state_main}">
+      <mx:AddChild relativeTo="{canvBtnContinue}" creationPolicy="all">
+        <mx:Button id="btnContinue" styleName="button" width="180" height="40" buttonMode="true" paddingTop="5"
+          />
+      </mx:AddChild>
+    </mx:State>
+    <mx:State name="{state_backButton}" basedOn="{state_main}">
+      <mx:AddChild relativeTo="{canvBtnBack}" creationPolicy="all" position="0">
+        <mx:Button id="btnBack" label="BACK" click="Click_btnBack(event)" styleName="button" width="180" height="40"
+          buttonMode="true" paddingTop="5"/>
+      </mx:AddChild>
+    </mx:State>
+  </mx:states>
+
+  <mx:transitions>
+    <mx:Transition fromState="state_main" toState="state_backButton">
+      <mx:Resize widthTo="{btnContinue.width + 210}" target="{canButtons}" easingFunction="{Bounce.easeOut}" />
+    </mx:Transition>
+
+    <mx:Transition fromState="state_backButton" toState="state_main">
+      <mx:Resize  widthTo="{btnContinue.width}"  target="{canButtons}"  />
+    </mx:Transition>
+  </mx:transitions>
+
+
+    <mx:VBox  id="ScrollConteiner" x="0" y="0" width="100%" paddingLeft="15" paddingTop="15" verticalGap="10" 
+              horizontalScrollPolicy="off" verticalScrollPolicy="off">
+              <!-- resize="resize_ScrollConteinerHandler(event)"  -->
+            <!--     <mx:Button label="save" click="clikSave(event)"/>
+                 <mx:Button label="load" click="clikLoad(event)"/>
+                   <mx:Button label="checkAnswer" click="clikCheckAnswer(event)"/>
+                   <mx:Button label="checkAnswerTeacher" click="clikCheckAnswerTeaher(event)"/>  --> 
+      <mx:VBox height="100%" width="100%" id="vbPrompts" childAdd="ChildAdd_vbPromptsHandler(event)"
+        resize="resize_vbPromptsHandler(event)"  verticalScrollPolicy="off" horizontalScrollPolicy="off" verticalGap="23"/>
+      <mx:Box id="BoxConteiner" width="100%" horizontalAlign="center">
+        <mx:Canvas id="canButtons"  verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+          <mx:Canvas id="canvBtnBack" left="0" verticalCenter="0" />
+          <mx:Canvas id="canvBtnContinue" right="0" verticalCenter="0"/>
+        </mx:Canvas>
+      </mx:Box>
+
+    </mx:VBox>
+</mx:Canvas>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="244" cornerRadius="3"
+  borderStyle="solid" borderThickness="2" borderColor="#88C4DE" backgroundColor="#E3E3E3"
+  creationComplete="CreationComplete(event)"
+  backgroundImage="@Embed(source='style/images/preferences/bkg/bkg.png')">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.events.FlexEvent;
+      import mx.managers.CursorManager;
+      import mx.collections.ArrayCollection;
+      import Model.Preferences;
+      import mx.core.UIComponent;
+      import mx.managers.PopUpManager;
+      import Model.Preferences;
+      import Controls.*;
+
+      private var _preferences:Preferences;
+      private var _callBack:Function;
+
+      private var _fingerCursor:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+      private  var _fonts:Array = new Array();
+
+      public static function Show(paren:UIComponent, preferences:Preferences, callBack:Function):PreferencesWindow
+      {
+        var preferencesControl:PreferencesWindow = new PreferencesWindow();
+        preferencesControl.Preferences = preferences;
+        preferencesControl.callBack = callBack;
+
+        PopUpManager.addPopUp(preferencesControl, paren, true);
+        PopUpManager.centerPopUp(preferencesControl);
+
+        return preferencesControl;
+      }
+
+      public function set callBack(value:Function):void
+      {
+        this._callBack = value;
+      }
+
+
+      public function set Preferences(preferences:Preferences):void
+      {
+        this._preferences = preferences;
+      }
+
+      private function CreationComplete(event:FlexEvent):void
+      {
+        var defaultFont:Object = new Object();
+        defaultFont.fontName = "Default";
+
+       
+        _fonts.push(defaultFont);
+        _fonts = _fonts.concat(_preferences.arrFontName);
+        
+       
+        cmbFontName.dataProvider = _fonts;
+        cmbFontName.labelField = "fontName";
+
+        for (var i:int = 0; i < _fonts.length; i++)
+        {
+          if (_fonts[i].fontName == _preferences.fontName)
+           break;
+        }
+
+        cmbFontName.selectedIndex = i;
+
+        cmbFontSize.dataProvider = _preferences.arrFontSize;
+        cmbFontSize.selectedItem = _preferences.fontSize;
+
+        cmbFontColor.dataProvider = _preferences.arrFontColor;
+        for (i = 0; i< (cmbFontColor.dataProvider as ArrayCollection).length; i++)
+          if ((cmbFontColor.dataProvider as ArrayCollection)[i].Color == _preferences.fontColor)
+          {
+            cmbFontColor.selectedIndex = i;
+            break;
+          }
+
+  //      quickLaunch.selected = _preferences.quickLaunch;
+  //      chBoxFullscreen.selected = _preferences.isFullScreen;
+ //       chBoxCheckAnswer.selected = _preferences.isCheckAnswer;
+      }
+
+      private function Click_OK():void
+      {
+        _preferences.fontSize = cmbFontSize.selectedItem as int;
+        _preferences.fontName = cmbFontName.selectedItem.fontName;
+        _preferences.fontColor = cmbFontColor.selectedItem.Color;
+   //     _preferences.quickLaunch = quickLaunch.selected;
+    //    _preferences.isFullScreen  = chBoxFullscreen.selected;
+   //     _preferences.isCheckAnswer = chBoxCheckAnswer.selected;
+
+        if (_callBack != null)
+          _callBack();
+        PopUpManager.removePopUp(this);
+      }
+
+      private function Click_btnDefault():void
+      {
+        _preferences.SetDefault();
+		 	
+        for (var i:int = 0; i < _fonts.length; i++)
+        {
+          if (_fonts[i].fontName == _preferences.fontName)
+           break;
+        }
+
+        cmbFontName.selectedIndex = i;
+        cmbFontSize.selectedItem = _preferences.fontSize;
+
+        for (i=0;i<(cmbFontColor.dataProvider as ArrayCollection).length; i++)
+          if ((cmbFontColor.dataProvider as ArrayCollection)[i].Color == _preferences.fontColor)
+          {
+            cmbFontColor.selectedIndex = i;
+            break;
+          }
+
+    //    quickLaunch.selected = _preferences.quickLaunch;
+    //    chBoxFullscreen.selected = _preferences.isFullScreen;
+   //    chBoxCheckAnswer.selected = _preferences.isCheckAnswer;
+      }
+
+      private function rollOver_buttonHandler(event:MouseEvent):void
+      {
+        _cursorID = CursorManager.setCursor(_fingerCursor);
+      }
+
+      private function rollOut_buttonHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorID);
+      }
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Style source="style/style_DLR.css"/>
+
+  <mx:Label x="10" y="47" text="Font" fontWeight="bold"/>
+ <!-- <mx:Label x="10" y="153" text="Quick Launch" fontWeight="bold"/> -->
+  <mx:Label x="10" y="73" text="Font:" fontWeight="normal"/>
+  <mx:ComboBox x="52" y="71" id="cmbFontName" width="169" styleName="ComboBoxPreferences"/>
+  <mx:Label x="10" y="101" text="Size:" fontWeight="normal"/>
+  <mx:ComboBox x="52" y="99" id="cmbFontSize" width="169" styleName="ComboBoxPreferences"/>
+  <mx:Label x="10" y="129" text="Color:" fontWeight="normal"/>
+  <mx:ComboBox x="52" y="127" id="cmbFontColor" itemRenderer="Controls.ItemRenderers.ComboBox_ColorPicker" width="169" labelField="Text"
+    styleName="ComboBoxPreferences"/>
+  <mx:Button x="265.5" y="189" label="OK" id="btnOk" styleName="ButtonPreferencesOK" click="Click_OK()"
+    rollOver="rollOver_buttonHandler(event)" rollOut="rollOut_buttonHandler(event)"/>
+  <mx:Button x="41.5" y="189" label="Restore All Defaults" id="btnDefault" click="Click_btnDefault()"
+    styleName="ButtonPreferencesRestore" rollOver="rollOver_buttonHandler(event)" rollOut="rollOut_buttonHandler(event)"/>
+ <!-- <mx:CheckBox x="20" y="179" label="enabled" id="quickLaunch"/> -->
+  <mx:Label x="127" y="27" text="Application Preferences" fontWeight="bold"/>
+ <!-- <mx:CheckBox x="20" y="183" label="enabled" fontWeight="normal" id="chBoxFullscreen"/>
+  <mx:Label text="Fullscreen" fontWeight="bold" x="10" y="157"/>
+  <mx:CheckBox x="20" y="291" label="enabled" fontWeight="normal" id="chBoxCheckAnswer"/> 
+  <mx:Label text="Check Answer" fontWeight="bold" x="10" y="265"/>-->
+
+</mx:Canvas>

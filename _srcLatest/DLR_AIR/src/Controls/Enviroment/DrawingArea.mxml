@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="300" creationComplete="creationCompleteHandler(event)">
+   <mx:Script>
+    <![CDATA[
+      import mx.events.FlexEvent;
+      import Model.EmbededData;
+     
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *    
+      *
+      *  Abstract:
+      *     Контрол для рисования, позволяет на себье рисовать, меняет курсор при наведении 
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _lastPoint:Point;
+      //Курсор в виде ручки
+      private var _pencilCursor:Class = EmbededData.inctance.pencilIcon;
+      private var _lasticCursor:Class = EmbededData.inctance.lasticIcon;
+      
+      private var _pencil:Boolean = true;
+      private var _lastic:Boolean = false;
+      private var _canDraw:Boolean;
+      
+      /**
+      * Private methods
+      */
+      
+      private function mouseOver_Handler(event:MouseEvent):void
+      {
+        _canDraw = true;
+        if(event.buttonDown)
+          _lastPoint = new Point(event.localX, event.localY);
+        var cursor:Class = _pencil ? _pencilCursor : _lasticCursor;
+        cursorManager.setCursor(cursor);
+        cursorManager.currentCursorYOffset = -34;
+      }
+      
+      private function mouseOut_Handler(event:MouseEvent):void
+      {
+        _canDraw = false;
+        _lastPoint = null;
+        cursorManager.removeAllCursors();
+      }
+      
+      private function mouseDown_Handler(event:MouseEvent):void
+      {
+        if(_canDraw)
+          _lastPoint = new Point(event.localX, event.localY);
+      }
+      
+      private function mouseUp_Handler(event:MouseEvent):void
+      {
+         _lastPoint = null;
+      }
+      
+      private function mouseMove_Handler(event:MouseEvent):void
+      {
+        if (_lastPoint)
+        {
+          //Если курсор ручка значит рисуем иначе стираем
+          var thickness:Number = _pencil ? 2 : 10;
+          var color:uint = _pencil ? 0x4C4E50 : 0xFFFFFF;
+          graphics.lineStyle(thickness, color);
+          graphics.moveTo(_lastPoint.x, _lastPoint.y);
+          graphics.lineTo(event.localX, event.localY);
+      
+          _lastPoint = new Point(event.localX, event.localY);
+        }
+      }
+      
+      private function DeactiveDrawingArea():void
+      {
+          removeEventListener(MouseEvent.MOUSE_MOVE, mouseMove_Handler);
+          
+          removeEventListener(MouseEvent.MOUSE_OVER, mouseOver_Handler);
+          removeEventListener(MouseEvent.MOUSE_OUT,  mouseOut_Handler);
+          
+          stage.removeEventListener(MouseEvent.MOUSE_UP,   mouseUp_Handler);
+          stage.removeEventListener(MouseEvent.MOUSE_DOWN, mouseDown_Handler);
+      }
+    
+      private function ActiveDrawingArea():void
+      {        
+          addEventListener(MouseEvent.MOUSE_MOVE, mouseMove_Handler);
+          
+          addEventListener(MouseEvent.MOUSE_OVER, mouseOver_Handler);
+          addEventListener(MouseEvent.MOUSE_OUT,  mouseOut_Handler);
+          
+          stage.addEventListener(MouseEvent.MOUSE_UP,   mouseUp_Handler);
+          stage.addEventListener(MouseEvent.MOUSE_DOWN, mouseDown_Handler);
+      }
+      
+      /**
+      * Events handler
+      */
+      
+    
+
+      /**
+      * Initialization
+      */
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+          ActiveDrawingArea();
+          setStyle("borderColor", "0x5CC0FF");
+          setStyle("borderThickness", "2");
+      }
+
+      /**
+      * Constructor
+      */
+        
+
+      /**
+      * Virtuals methods
+      */
+
+      
+      /**
+      * Public members/properties
+      */
+      public function set pencil(value:Boolean):void
+      {
+        _pencil = value;
+        _lastic = !value;
+      }   
+      
+      public function set lastic(value:Boolean):void
+      {
+        _lastic = value;
+        _pencil = !value;
+      } 
+      public function get lastic():Boolean
+      {
+        return _lastic;
+      } 
+      
+      
+      public function set pencilCursor(value:Class):void
+      {
+        _pencilCursor = value;
+      }   
+      
+      public function set lasticCursor(value:Class):void
+      {
+        _lasticCursor = value;
+      } 
+      
+      public function set activeDrawingArea(value:Boolean):void
+      {
+        if (value == false)
+            DeactiveDrawingArea();
+        else 
+            ActiveDrawingArea();      
+      }
+      public function get activeDrawingArea():Boolean
+      {
+         return false;  
+      }
+      
+      
+      /**
+      * Public methods
+      */
+    
+
+
+    ]]>
+  </mx:Script>
+</mx:Canvas>

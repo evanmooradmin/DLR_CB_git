@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" horizontalAlign="center">
+  <mx:Script>
+    <![CDATA[
+      import mx.core.Application;
+    
+      [Bindable]
+      public var gradeNumber:int = 2;
+    ]]>
+  </mx:Script>
+  <mx:Label text="{Application.application.Title}" fontWeight="bold" fontSize="25"/>
+  <mx:Label text="Lesson History" fontWeight="bold" fontSize="25"/>
+</mx:VBox>

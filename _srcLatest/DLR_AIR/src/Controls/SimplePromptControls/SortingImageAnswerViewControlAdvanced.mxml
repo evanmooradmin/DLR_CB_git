@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl xmlns:controls="Controls.Enviroment.*" xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:ns1="Controls.*"  currentState="{state_dragged}" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+
+ <mx:Script>
+    <![CDATA[
+		import Controls.ActivityControl;
+		import Controls.AnswerControls.DragAnswers.DragSortingImageControl;
+		
+		import Model.Answers.Answer;
+		import Model.Answers.SortingAnswer;
+		import Model.Answers.SortingImage;
+		import Model.EmbededData;
+		
+		import interfaces.IBasePrompt;
+		
+		import mx.events.FlexEvent;
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *
+      *
+      *  Abstract:
+      *
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static const state_dragged:String = "state_dragged";
+      public static const state_dropped:String = "state_dropped";
+      public static const state_correct:String = "state_correct";
+      public static const state_incorrect:String = "state_incorrect";
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:SortingImage;
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+
+      /**
+      * Private methods
+      */
+      private function UpdateComplete_dropAnswerHandler(event:FlexEvent):void
+      {
+        lbIndex.visible = !dropAnswer.isDrop;
+      }
+
+
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function Init(answer:IBasePrompt):void
+      {
+        _answer = answer as SortingImage;
+        img.source = EmbededData.inctance[EmbededData.img + this._answer.source];
+        descriptionText.htmlText = this._answer.text;
+
+        lbIndex.text = _answer.answer.toString();
+
+        dropAnswer.minWidth = 125;
+        dropAnswer.width = 125;
+
+        img.filters = [new DropShadowFilter(5,35,13290701)];
+      }
+
+      public override function FontName():void
+      {
+        descriptionText.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        descriptionText.setStyle("fontSize", _fontSize);
+
+      }
+
+      public override function FontColor():void
+      {
+        descriptionText.setStyle("color", _fontColor);
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+           return true;  
+        return dropAnswer.isDrop;
+      }
+
+      public override function GetText():String
+      {
+        return dropAnswer.GetText();
+      }
+
+      public override function SetIncorrect():void
+      {
+        img.source = EmbededData.inctance[EmbededData.img + (dropAnswer.dropObject.answer as SortingImage).source];
+        currentState = state_incorrect;
+      }
+
+      public override function SetCorrect():void
+      {
+        img.source = EmbededData.inctance[EmbededData.img + this._answer.source];
+         currentState = state_correct;
+      }
+
+      public override function Continue():void
+      {
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+        descriptionText.setStyle("fontFamily", "Futura");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+       this._answer.result = this.GetText(); 
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        this._isDeserialize = true;  
+      }
+      
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+   <states>
+
+    <mx:State name="{state_dragged}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" id="hBoxContainer" width="100%" >
+          <mx:Canvas id="canvasContainer">
+            <ns1:DropAnswerControl id="dropAnswer" height="125" width="125" horizontalScrollPolicy="off"
+              verticalScrollPolicy="off" updateComplete="UpdateComplete_dropAnswerHandler(event)"/>
+            <mx:Label id="lbIndex" color="#FF0000" horizontalCenter="0" verticalCenter="-20" fontSize="15"
+                fontWeight="bold"/>
+          </mx:Canvas>
+          <controls:TextExended id="descriptionText" selectable="false" width="{this.width - dropAnswer.width}"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_dropped}" basedOn="state_dragged" >
+      <mx:AddChild relativeTo="{canvasContainer}"  creationPolicy="all">
+        <mx:VBox id="hBoxCorrect" verticalAlign="middle" horizontalAlign="center">
+            <mx:Image id="img"  height="125" width="125" autoLoad="true"/>
+        </mx:VBox>
+      </mx:AddChild>
+      <mx:RemoveChild target="{dropAnswer}"/>
+      <mx:RemoveChild target="{descriptionText}"/>
+    </mx:State>
+
+    <mx:State name="{state_correct}" basedOn="{state_dropped}">
+      <mx:AddChild relativeTo="{hBoxCorrect}" creationPolicy="all">
+             <mx:Image id="imgIconCorrect" source="{EmbededData.inctance.iconCorrect}" />
+      </mx:AddChild>
+      <mx:AddChild target="{descriptionText}" relativeTo="{hBoxContainer}" />
+   </mx:State>
+
+     <mx:State name="{state_incorrect}" basedOn="{state_dropped}">
+      <mx:AddChild relativeTo="{hBoxCorrect}" creationPolicy="all">
+             <mx:Image id="imgIconIncorrect"  source="{EmbededData.inctance.iconIncorrect}" />
+      </mx:AddChild>
+      <mx:AddChild target="{descriptionText}" relativeTo="{hBoxContainer}"/>
+   </mx:State>
+
+  </states>
+</BaseUIControl>

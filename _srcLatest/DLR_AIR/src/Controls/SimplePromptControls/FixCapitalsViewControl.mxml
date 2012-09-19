@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_main}" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import Model.Syntax.RelationSentence;
+      import Model.EnumRegExp;
+      import Model.FactoryRegExp;
+      import Controls.ActivityControl;
+      import mx.events.FlexEvent;
+      import Model.Answers.FixCapitalsAnswer;
+      import Model.EmbededData;
+      import mx.events.FlexMouseEvent;
+      import mx.core.UIComponent;
+      import Model.Answers.Answer;
+      import flash.text.AntiAliasType;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\FixCapitalsViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for fix capitals prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   28-December-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:FixCapitalsAnswer;
+      private var _isContinue:Boolean = false;
+      private var _isCanClick:Boolean = true;
+      private var _correctAnswer:String;
+      
+      [Bindable]
+      private var _userText:String = "";  
+      [Bindable]
+      private var _fntSize:int;
+      
+      private const state_main:String = "state_main";
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      
+      
+      [Bindable]
+      private var _left:int;
+
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+      private function Click_lbTextHandler(event:MouseEvent):void
+      {
+        if (this._isCanClick == true)
+        {
+           currentState = state_edit;
+           txtInputText.setFocus();
+        }
+      }
+
+      private function FocusOut_txtInpuTextHandler(event:FocusEvent):void
+      {
+        lbText.text = txtInputText.text;
+        _userText = txtInputText.text;
+        currentState = state_main;
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        lbText.setStyle("fontFamily", _fontName);
+        txtInputText.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        _fntSize = _fontSize;
+        lbText.setStyle("fontSize", _fontSize);
+        txtInputText.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+
+        lbText.x = _fontSize;
+        txtInputText.x = _fontSize;
+
+        imgCorrect.height = _fontSize;
+        imgCorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+      }
+
+      public override function FontColor():void
+      {
+        lbText.setStyle("color", _fontColor);
+        txtInputText.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        return true;
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        _answer = answer as FixCapitalsAnswer;
+        //Заменяем на пробелы теги <p>
+        lbText.htmlText = _answer.text.replace(FactoryRegExp.instance.P(EnumRegExp.G),' ');
+        //вырезаем пробелы вначале строки
+        lbText.htmlText = lbText.htmlText.replace(FactoryRegExp.instance.SpacesStartString(EnumRegExp.G),'');
+        //вырезаем пробелы вконце строки
+        lbText.htmlText = lbText.htmlText.replace(FactoryRegExp.instance.SpacesFinishString(EnumRegExp.G),'');
+        _answer = answer as FixCapitalsAnswer;
+        _userText = lbText.htmlText;
+        this._correctAnswer = lbText.htmlText;
+      }
+
+      public override function GetText():String
+      {
+        if (currentState == state_edit)
+          lbText.htmlText = txtInputText.text;
+        return txtInputText.text;
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+          //Если ответ не совпадает значит пользователь менял его и мы выводим сосотояние коректности и подсвечиваем буквы
+         if (txtInputText.text != _answer.answer)
+         {
+              lbCorrect.htmlText = RelationSentence.Compare(_answer.text, _answer.answer);
+              currentState = state_correct;
+         }
+          // иначе проверяем равен ли введенный текст изначальному который был
+         else  if (txtInputText.text != this._correctAnswer)
+         {
+             lbCorrect.htmlText = RelationSentence.Compare(_answer.text, _answer.answer);
+             currentState = state_correct;
+         }
+         else
+         {
+             this._isCanClick = false;
+             lbText.removeEventListener(MouseEvent.CLICK, Click_lbTextHandler);
+         }
+        }
+      }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+          currentState = state_incorrect;
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+      }
+
+      public override function DefaultFont():void
+      {
+        lbText.setStyle("fontFamily", "EMComic");
+        txtInputText.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._answer.result = _userText;
+      }  
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (this._answer == null || this._answer.result == null)
+            return 
+        lbText.text = this._answer.result;
+        txtInputText.text  =  this._answer.result;
+        _userText = this._answer.result;
+      } 
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_main}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:Label id="lbText" click="Click_lbTextHandler(event)" />
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:TextInput id="txtInputText" text="{lbText.text}" focusOut="FocusOut_txtInpuTextHandler(event)"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect" width="{_fntSize}" height="{_fntSize}"/>
+          <mx:Text id="lbCorrect" maxWidth="{ActivityControl.MAX_WIDTH - imgCorrect.width - 60}" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle">
+          <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect" width="{_fntSize}" height="{_fntSize}"/>
+          <mx:Label id="lbIncorrect" text="{_userText}"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+  </states>
+</BaseUIControl>

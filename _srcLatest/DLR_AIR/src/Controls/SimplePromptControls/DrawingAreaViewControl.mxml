@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*"  xmlns:mx="http://www.adobe.com/2006/mxml"  verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+  currentState="{state_drawing}" creationComplete="creationComplete_this_handler()">
+  <mx:Script>
+    <![CDATA[
+      import mx.graphics.codec.JPEGEncoder;
+      import interfaces.IBasePrompt;
+      import interfaces.em.EMUserTypes;
+      import mx.events.FlexEvent;
+      import mx.managers.CursorManager;
+      import mx.validators.EmailValidator;
+      import Model.EmbededData;
+      import Controls.ActivityControl;
+      import Model.Prompts.Prompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\DrawingAreaViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for drawing area prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   04-January-2010
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+
+      /**
+      * Private members/properties
+      */
+      private var _lastPoint:Point;
+      
+      private var _colorPencil:int = 0;
+      //высота картинки-карандаша - величина вертикального смещения
+      private var _heigthPencil:int=35;
+      private var _pencilCursor:Class = EmbededData.inctance.pencilIcon;
+      private var _fingerCursor:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+
+      private const state_relatedPrompt:String = "state_relatedPrompt";
+      private const state_drawing:String = "state_drawing";
+      private const state_continue:String = "state_continue";
+      
+      //массив в котором храняться координаты точек по кторым будем восоздовать рисунок у учителя
+      private var _arrayOfPoints:Array = new Array();
+      //Нужно ли сохранять координаты точек или нет
+      private var _isNeedSavePoints:Boolean = false;
+      private var _prompt:Prompt;
+      //Построен ли контрол уже на основе ответа пользователя или нет. НУжно для того что бы 
+      //отловить ситуацию если LoadResults вызываеться 2 раза.
+      private var _isloadStudentAnswers:Boolean = false;
+      //Если равно true то события мыши не обрабатываються. Добавил потому что канвас не от всех событий отписывался
+      private var _removeHandlerEvent:Boolean = false;
+      
+      //Можно ли рисовать вообще или нет
+      private var _isCanDrow:Boolean = true;
+      //флаг для управлдения курсорами 
+      private var _isDraw:Boolean = false;
+      
+      private var _isCreationComplete:Boolean = false;
+      private var _isLoadResults:Boolean = false;
+      private var _isNeedCheckAnswer:Boolean = false;
+               
+      private var _background:BitmapData;
+      private var _jpegLoader:Loader;      
+     
+      /**
+      * Private methods
+      */
+      private function encodeJPEG():ByteArray
+      {
+        var encoder:JPEGEncoder = new JPEGEncoder();
+        if (_background)
+            return encoder.encode(_background);
+        return new ByteArray();    
+      }
+      
+      private function decodeJPEG(byteArray:ByteArray):void
+      {
+        if (byteArray.length >0)
+        {
+          _jpegLoader = new Loader();
+          _jpegLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, jpegLoader_completeHandler);
+          _jpegLoader.loadBytes(byteArray);
+        }
+      }   
+          
+      /**
+      * Events handler
+      */
+      private function creationComplete_this_handler():void
+      {
+        _isCreationComplete = true;
+        if (_isLoadResults)
+        {
+            LoadResults(_isNeedCheckAnswer);
+           _isLoadResults = true;
+        }   
+      }
+      
+      private function mouseDown_canvDrawing_Handler(event:MouseEvent):void
+      {
+        _isDraw = true;
+        if (_isCanDrow)
+        {
+          canvDrawing.graphics.lineStyle(1, _colorPencil);
+          canvDrawing.graphics.moveTo(event.localX, event.localY);
+          canvDrawing.addEventListener(MouseEvent.MOUSE_OUT, mouseOut_canvDrawing_Handler);
+        }
+      }
+      
+      private function mouseMove_canvDrawing_Handler(event:MouseEvent):void 
+      {
+        //рисуем ли мы 
+        if (_isDraw)
+        {
+            canvDrawing.graphics.lineStyle(2,_colorPencil);
+            canvDrawing.graphics.lineTo(event.localX, event.localY);
+            //Сохраняем то что рисуем, чтобы потом если при updateDisplayList оно стерлость его перерисовать
+            _background = new BitmapData(canvDrawing.width/Math.abs(canvDrawing.scaleX), canvDrawing.height/Math.abs(canvDrawing.scaleY));
+            _background.draw(canvDrawing, new Matrix());
+        }
+        else if (!event.buttonDown && _cursorID == 0)
+                 _cursorID = cursorManager.setCursor(_pencilCursor, 2, 0, -_heigthPencil);
+      }
+      
+      private function mouseOut_canvDrawing_Handler(event:MouseEvent):void
+      {
+        _isDraw = false;
+      }
+      
+      private function mouseUp_canvDrawing_Handler(event:MouseEvent):void
+      {
+        _isDraw = false;
+      }
+      
+      private function rollOverMouse_canvDrawing_Handler(event:MouseEvent):void
+      {
+      	cursorManager.removeCursor(_cursorID);	
+      	//Если мы уже нажали гденить на левую кнопку то курсор не меняеться 	
+      	if (event.buttonDown == false) 	
+            _cursorID = cursorManager.setCursor(_pencilCursor, 2, 0, -_heigthPencil);
+      }
+  
+      private function rollOutMouse_canvDrawing_Handler(event:MouseEvent):void
+      {
+        cursorManager.removeAllCursors();
+        _cursorID = 0;
+      }
+      
+      
+      private function jpegLoader_completeHandler(event:Event):void
+      {
+        _background = new BitmapData(canvDrawing.width, canvDrawing.height);
+        _background.draw(_jpegLoader.content, new Matrix());
+        
+        invalidateDisplayList();
+      }
+      
+      
+      
+
+
+      private function Click_btnClearHandler(event:MouseEvent):void
+      {
+        canvDrawing.graphics.clear();
+        _arrayOfPoints = new Array();
+      }
+
+      private function rollOver_btnClearHandler(event:MouseEvent):void
+      {
+        _cursorID = CursorManager.setCursor(_fingerCursor);
+      }
+
+      private function rollOut_btnClearHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorID);
+      }
+      //Метод вызываеться при входев состояние Continue. Отписывам от все событий мыши канвас
+      private function enterState_stateContinueHandler(event:FlexEvent):void
+      {
+          _removeHandlerEvent = true;
+        //Запрещаем рисование
+        _isCanDrow = false;
+        canvDrawing.removeEventListener(MouseEvent.MOUSE_DOWN, mouseDown_canvDrawing_Handler);
+        canvDrawing.removeEventListener(MouseEvent.MOUSE_UP, mouseUp_canvDrawing_Handler);
+        canvDrawing.removeEventListener(MouseEvent.MOUSE_MOVE, mouseMove_canvDrawing_Handler);
+        canvDrawing.removeEventListener(MouseEvent.ROLL_OUT,  rollOutMouse_canvDrawing_Handler);
+        canvDrawing.removeEventListener(MouseEvent.ROLL_OVER, rollOverMouse_canvDrawing_Handler);
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+       override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+      {
+        super.updateDisplayList(unscaledWidth, unscaledHeight);
+        
+        if (_background && canvDrawing)
+        {
+          canvDrawing.graphics.clear();
+          canvDrawing.graphics.beginBitmapFill(_background, new Matrix(), false); 
+          canvDrawing.graphics.drawRect(0, 0, canvDrawing.width/Math.abs(canvDrawing.scaleX), canvDrawing.height/Math.abs(canvDrawing.scaleY));
+          canvDrawing.graphics.endFill();
+        }
+      }
+      
+      public override function FontName():void
+      {
+        txtTitle.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        txtTitle.setStyle("fontSize", _fontSize);
+      }
+
+      public override function FontColor():void
+      {
+        txtTitle.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        return true;
+      }
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        this._prompt = prompt as Prompt;
+        txtTitle.htmlText = _prompt.text;
+        if (_prompt.relatedPromptID != 0)
+          stateDrawing.basedOn = state_relatedPrompt;
+          
+       if (ActivityControl.userType == EMUserTypes.EM_Student)
+            this._isNeedSavePoints = true;
+      }
+
+      public override function GetText():String
+      {
+        return "";
+      }
+
+      public override function SetCorrect():void
+      {
+      }
+
+      public override function SetIncorrect():void
+      {
+      }
+
+      public override function Continue():void
+      {
+        currentState = state_continue;
+        _isCanDrow = false;
+      }
+
+      public override function DefaultFont():void
+      {
+        txtTitle.setStyle("fontFamily", "Futura");
+      }
+
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        //Сохраняем картинку в байт масиве
+    	   this._prompt.result = encodeJPEG(); 
+      } 
+      
+       //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+         if (this._prompt.result != null && this._prompt.result is ByteArray)
+          {
+             _isNeedCheckAnswer = needCheckAnswer;
+          	 _isLoadResults = true;
+             //Рисум картинку
+          	 if (_isCreationComplete) 
+                 decodeJPEG(ByteArray(this._prompt.result));
+             if (_isNeedCheckAnswer)
+             {
+               _isCanDrow = false;
+                currentState = state_continue;
+             }    
+          }
+      }     
+      
+      
+      /**
+      * Public members/properties
+      */
+ 
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_relatedPrompt}">
+      <mx:RemoveChild target="{txtTitle}"/>
+      <mx:AddChild target="{txtTitle}" relativeTo="{canvTitle}"/>
+      <mx:SetStyle target="{txtTitle}" name="textAlign" value="center"/>
+      <mx:SetProperty target="{txtTitle}" name="width" value="{canvDrawing.width - 5}"/>
+    </mx:State>
+
+    <mx:State name="{state_drawing}" id="stateDrawing">
+      <mx:AddChild relativeTo="{canvDrawingHolder}" creationPolicy="all">
+        <mx:Canvas id="canvDrawing" width="100%" height="100%" mouseDown="mouseDown_canvDrawing_Handler(event)"
+          mouseUp="mouseUp_canvDrawing_Handler(event)" mouseMove="mouseMove_canvDrawing_Handler(event)"
+          verticalScrollPolicy="off"  rollOut="rollOutMouse_canvDrawing_Handler(event)" rollOver="rollOverMouse_canvDrawing_Handler(event)"
+          borderStyle="solid" cornerRadius="15"/>
+      </mx:AddChild>
+   </mx:State>
+ 
+    <mx:State name="{state_continue}" enterState="enterState_stateContinueHandler(event)" basedOn="{state_drawing}">
+     <!-- <mx:AddChild relativeTo="{canvDrawingHolder}" creationPolicy="all">
+        <mx:Canvas id="canvNoDrawing" width="100%" height="100%" borderStyle="solid" cornerRadius="15" />
+      </mx:AddChild>-->
+      <mx:SetProperty target="{btnClear}" name="visible" value="false" />
+    </mx:State>
+  </states>
+
+  <mx:VBox>
+    <mx:Text id="txtTitle" width="100%" selectable="false"/>
+     <mx:Canvas id="canvContainer" maxWidth="{ActivityControl.MAX_WIDTH - 100}" minWidth="{ActivityControl.MAX_WIDTH - 100}"
+      verticalScrollPolicy="off">
+      <mx:Canvas id="canvDrawingHolder" width="100%" height="290" />
+      <mx:Canvas id="canvTitle"/>
+      <mx:Button id="btnClear" right="25" label="Clear" y="10" click="Click_btnClearHandler(event)" styleName="button1"
+        rollOver="rollOver_btnClearHandler(event)" rollOut="rollOut_btnClearHandler(event)"/>
+    </mx:Canvas>
+  </mx:VBox>
+
+</BaseUIControl>

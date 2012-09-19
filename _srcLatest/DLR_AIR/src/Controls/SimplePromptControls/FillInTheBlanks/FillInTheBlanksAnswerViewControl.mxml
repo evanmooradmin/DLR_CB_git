@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml"  
+  currentState="{state_edit}">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import interfaces.model.IBaseEntity;
+      import Model.FactoryRegExp;
+      import mx.events.ResizeEvent;
+      import Model.EmbededData;
+      import Model.Answers.Answer;
+      import Model.Answers.FillInTheBlanksAnswer;
+      import Model.StateTypes;
+      import Model.Events.StateEvent;
+      import Model.Prompts.FillInTheBlanks;
+      import Model.Prompts.Prompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\FillInTheBlanks\FillInTheBlanksPromptViewControl.mxml
+      *
+      *  Abstract:
+      *     This is view control for fill in the blanks answer
+      *
+      *  Author:
+      *     Evgenij Welikij   05-November-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      [Bindable]
+      private var _fntSize:int = 0;
+      
+      protected var _answer:FillInTheBlanksAnswer;
+      private var _isContinue:Boolean = false;
+
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false;
+      
+      private var _txtTo:String;
+      private var _txtAfter:String;
+  
+      /**
+      * Private methods
+      */
+      private function TextAreasetMaxWidth():void
+      {
+        var lineMetrics:TextLineMetrics = textInput.measureText(_answer.answer);
+
+        textInput.width = lineMetrics.width + lineMetrics.x * 4;
+        if (textInput.width < 50)
+              textInput.width = 100;
+      }
+
+
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        textInput.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        txtTo.setStyle("fontFamily", _fontName);
+        txtAfter.setStyle("fontFamily", _fontName);
+
+        TextAreasetMaxWidth();
+      }
+
+      public override function FontSize():void
+      {
+        _fntSize = _fontSize;
+        textInput.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+        txtTo.setStyle("fontSize", _fontSize);
+        txtAfter.setStyle("fontSize", _fontSize);
+
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+
+        TextAreasetMaxWidth();
+      }
+
+      public override function FontColor():void
+      {
+        textInput.setStyle("color", _fontColor);
+        lbCorrect.setStyle("color", _fontColor);
+        lbIncorrect.setStyle("color", _fontColor);
+        txtTo.setStyle("color", _fontColor);
+        txtAfter.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+            return true;
+        if (FactoryRegExp.trim(textInput.text) != "")
+          return true;
+        return false;
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        this._answer = answer as FillInTheBlanksAnswer;
+
+        if (_answer.existInsertPlace)
+        {
+          txtTo.htmlText = _answer.textTo;
+          txtAfter.htmlText = _answer.textAfter;
+        }
+        
+        _txtTo = txtTo.htmlText;
+        _txtAfter = txtAfter.htmlText;
+        textInput.maxChars = _answer.answer.length;
+      }
+
+      public override function GetText():String
+      {
+        return textInput.text;
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+          currentState = state_correct
+          lbCorrect.htmlText = _txtTo + ' ' + '<font face="EMComic" color="#' + EmbededData.inctance.iconCorrectColorHex 
+                          + '">'+  _answer.answer + "</font> " + ' ' + _txtAfter;
+          
+        }
+      }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+        {
+          currentState = state_incorrect;
+          lbIncorrect.htmlText = _txtTo + ' ' + '<font face="EMComic" color="#' +EmbededData.inctance.iconIncorrectColorHex + '">' 
+                                  + textInput.text + "</font> " + ' ' + _txtAfter;
+          
+        }
+      }
+
+      public override function DefaultFont():void
+      {
+        textInput.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+
+        txtTo.setStyle("fontFamily", "EMComic");
+        txtAfter.setStyle("fontFamily", "EMComic");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._answer.result = textInput.text;   
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (needCheckAnswer)
+            _isDeserialize = true;
+        textInput.text = this._answer.result;    
+      }
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox id="hBox" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="100%">
+          <mx:Text id="txtTo" selectable="false"/>
+          <mx:TextInput id="textInput" fontWeight="normal" />
+          <mx:Text id="txtAfter" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox width="100%" verticalAlign="middle">
+          <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect" width="{_fntSize}" height="{_fntSize}"/>
+          <mx:Label id="lbIncorrect"  selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox width="100%" verticalAlign="middle">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect" width="{_fntSize}" height="{_fntSize}"/>
+          <mx:Label id="lbCorrect"  selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+  </states>
+</BaseUIControl>

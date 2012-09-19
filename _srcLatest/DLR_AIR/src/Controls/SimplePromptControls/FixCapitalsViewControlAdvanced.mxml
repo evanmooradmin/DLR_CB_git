@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_main}" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="100%" xmlns:ns1="Controls.Enviroment.*" >
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import Model.EditDistanceExt;
+      import Model.Prompts.Prompt;
+      import mx.controls.TextInput;
+      import mx.events.ResizeEvent;
+      import Model.Syntax.RelationSentence;
+      import Model.EnumRegExp;
+      import Model.FactoryRegExp;
+      import Controls.ActivityControl;
+      import mx.events.FlexEvent;
+      import Model.Answers.FixCapitalsAnswer;
+      import Model.EmbededData;
+      import mx.events.FlexMouseEvent;
+      import mx.core.UIComponent;
+      import Model.Answers.Answer;
+      import flash.text.AntiAliasType;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\FixCapitalsViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for fix capitals prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   28-December-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:FixCapitalsAnswer;
+      private var _isContinue:Boolean = false;
+	    private var _isChangeStateMain:Boolean = false;	
+
+      private const state_main:String = "state_main";
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_correct_and_incorrect:String = "state_correct_and_incorrect";
+      private const state_incorrect_lite:String = "state_incorrect_lite";
+      private const state_correct_lite:String = "state_correct_lite";
+      
+       //Хранит промпт родителя, это нужно для того что бы можно было сохранить результаты пользователя в правельную модель
+      //так как иногда мы создаем answer прямо в FixCapitalsControl
+      protected var _parentPrompt:Prompt;
+
+
+      // если равно true значит вызываем состояние StateCorrect которое используеться в редоктировании текста с изображением
+      public var isNeedStateCorrect:Boolean = false;
+
+      [Bindable]
+      private var _left:int;
+      [Bindable]
+      private var _fntName:String;
+      [Bindable]
+      private var _fntSize:int;
+
+      /**
+      * Private methods
+      */
+      private function resize(event:ResizeEvent):void
+      {
+       //lbText.maxWidth = this.width;
+      }
+
+      /**
+      * Events handler
+      */
+      private function Click_lbTextHandler(event:MouseEvent):void
+      {
+      	_isChangeStateMain = true;
+        textEdit.height = textMain.height;
+        textEdit.htmlText = textMain.htmlText;
+        textEdit.htmlText = textEdit.htmlText.replace(new RegExp("(SIZE=\"[0-9]+\")|(FACE=\"[A-z]+\")","g"),"");
+        currentState = state_edit;
+        textEdit.setFocus();
+      }
+
+      private function change_lbCorrect(event:Event):void
+      {
+       (event.target as TextArea).htmlText = lbCorrect.htmlText;
+      }
+
+      private function change_lbIncorrect(event:Event):void
+      {
+        (event.target as TextArea).htmlText = lbIncorrect.htmlText;
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        _fntName = _fontName;
+        if (isNeedStateCorrect == false)
+        {
+            textMain.setStyle("fontFamily", _fontName);
+            textEdit.setStyle("fontFamily", _fontName);
+            lbCorrect.setStyle("fontFamily", _fontName);
+            lbIncorrect.setStyle("fontFamily",_fontName);
+        }
+      }
+      //Comic Sans MS
+      public override function FontSize():void
+      {
+        this._fntSize = _fontSize;
+        textMain.setStyle("fontSize", _fontSize);
+        textEdit.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+
+        if (txtArIncorrect != null)
+            txtArIncorrect.setStyle("fontSize", _fontSize);
+        if (txtArCorrect != null)
+            txtArCorrect.setStyle("fontSize", _fontSize);
+        /*lbText.x = size;
+        txtInputText.x = size;*/
+
+        imgCorrect.height = _fontSize;
+        imgCorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+      }
+
+      public override function FontColor():void
+      {
+        textEdit.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        return true;
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        _answer = answer as FixCapitalsAnswer;
+        //Заменяем на 4 пробела теги <p>
+        textMain.htmlText = _answer.text.replace(FactoryRegExp.instance.P(EnumRegExp.G),'    ');
+     //   txtInputText.htmlText =  _answer.text.replace(FactoryRegExp.instance.P(EnumRegExp.G),'    ');
+        //Вырезаем все марки
+        textMain.htmlText =  textMain.htmlText.replace(FactoryRegExp.instance.Mark(EnumRegExp.G),'');
+        //вырезаем пробелы вконце строки
+        textMain.htmlText = textMain.htmlText.replace(FactoryRegExp.instance.SpacesFinishString(EnumRegExp.G),'');
+        textEdit.htmlText = textMain.htmlText;
+        currentState = state_main;
+       }
+
+      public override function GetText():String
+      {
+        if (textEdit.text != null)
+            return textEdit.text.replace(new RegExp('[‘’`]','g'),'\'');
+        else
+            return textMain.text.replace(new RegExp('[‘’`]','g'),'\'');
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+         //Удаляем все марки
+        // var answerWrong:String = _answer.text.replace(FactoryRegExp.instance.Mark(EnumRegExp.G),' ');
+        // var answerRich:String = _answer.answer.replace(FactoryRegExp.instance.Mark(EnumRegExp.G),' ');
+         //Удаляем все теги HTML 
+        // answerWrong = answerWrong.replace(FactoryRegExp.instance.AllTegs(EnumRegExp.G), '');
+        // answerRich = answerRich.replace(FactoryRegExp.instance.AllTegs(EnumRegExp.G), '');
+         
+       //  var editDistance:EditDistanceExt = new EditDistanceExt(answerRich, answerWrong, EmbededData.inctance.iconCorrectColorHex);
+         var answerRich:String = _answer.answer.replace(new RegExp('[‘’`]','g'),'\'');
+         lbCorrect.htmlText = RelationSentence.Compare(_answer.text, answerRich);
+         lbCorrect.htmlText = lbCorrect.htmlText.replace(FactoryRegExp.instance.BR(EnumRegExp.G),'\n');
+           //Заменяем на пробелы теги <p>
+         lbCorrect.htmlText = lbCorrect.htmlText.replace(FactoryRegExp.instance.P(EnumRegExp.G),'    ');
+       //     lbCorrect.htmlText = editDistance.compareString;
+          if (currentState == state_main || currentState == state_edit)
+          {
+              if (this.isNeedStateCorrect == false)
+                   currentState = state_correct_lite;
+              else
+                  currentState = state_correct;
+          }
+          else if (this.isNeedStateCorrect == true)
+                      currentState = state_correct;
+                  else
+                      currentState = state_correct_and_incorrect;
+               }
+            }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+        {
+          if (this.isNeedStateCorrect == false)
+          {
+
+              if (currentState == state_main)
+              {
+                 currentState = state_incorrect_lite;
+                 lbIncorrect.htmlText = textMain.htmlText;
+                 lbIncorrect.htmlText = lbIncorrect.htmlText.replace(new RegExp("</FONT></P>","g"),"\n</FONT></P>");
+                 lbIncorrect.htmlText = lbIncorrect.htmlText.replace(new RegExp("(SIZE=\"[0-9]+\")|(FACE=\"[A-z]+\")","g"),"");
+              }
+              else
+              {
+                 currentState = state_incorrect_lite;
+                 lbIncorrect.htmlText = textEdit.htmlText;
+
+                 lbIncorrect.htmlText = lbIncorrect.htmlText.replace(new RegExp("</FONT></P>","g"),"\n</FONT></P>");
+                 lbIncorrect.htmlText = lbIncorrect.htmlText.replace(new RegExp("(SIZE=\"[0-9]+\")|(FACE=\"[A-z]+\")","g"),"");
+              }
+          }
+          else
+          {
+              currentState = state_incorrect;
+             //Присваеваем текстовому полю текст взависимости от того менял ли пользователь его или нет
+             // Необходимо присваивать именно так потомучто иначе если это делать через текстовые поля другого состояния то теряються переносы строк
+             if (textEdit != null)
+                 txtArIncorrect.htmlText = textEdit.htmlText;
+             else
+                 txtArIncorrect.htmlText = textMain.htmlText;
+          }
+        }
+
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+        if (isNeedStateCorrect == false)
+             currentState =  state_correct_lite;
+      }
+
+      public override function DefaultFont():void
+      {
+        this._fontName = "EMComic";
+        textMain.setStyle("fontFamily", "EMComic");
+        textEdit.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+        txtArIncorrect.setStyle("fontFamily", "EMComic");
+        txtArCorrect.setStyle("fontFamily", "EMComic");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        if (_isChangeStateMain == false)
+            this._answer.result = textMain.text;
+        else 
+            this._answer.result = textEdit.text;
+        //отыскиваем \r и заменяем их на текстовый вариант чтоб потом обратно перевести      
+        this._answer.result =  (this._answer.result as String).replace(new RegExp("\\r","g"),"\n");  
+        
+        if (_parentPrompt != null)
+             _parentPrompt.result =  this._answer.result;  
+      }
+      
+     //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (this._parentPrompt != null) 
+        {
+          //отыскиваем \r и заменяем их на текстовый вариант чтоб потом обратно перевести      
+         textMain.htmlText = textEdit.htmlText =  this._parentPrompt.result;  
+         textEdit.validateNow(); 
+         textMain.validateNow();  
+        }
+        else
+        {
+          //отыскиваем \r и заменяем их на текстовый вариант чтоб потом обратно перевести      
+          textMain.htmlText = textEdit.htmlText =  this._answer.result; 
+          textEdit.validateNow(); 
+          textMain.validateNow(); 
+        }
+      }
+      
+      /**
+      * Public members/properties
+      */
+      public function set parentPrompt(prompt:Prompt):void
+      {
+        this._parentPrompt = prompt;
+      }
+
+      /**
+      * Public methods
+      */
+
+    ]]>
+  </mx:Script>
+
+
+
+  <states>
+    <mx:State name="{state_main}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:VBox id="vBoxContainer"   width="{this.width}" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+            <mx:Text id="textMain"   width="{this.width}" height="100%"  click="Click_lbTextHandler(event)" x="{imgCorrect.width}"/>
+        </mx:VBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_edit}" basedOn="{state_main}">
+      <mx:AddChild relativeTo="{vBoxContainer}" creationPolicy="all">
+         <mx:TextArea id="textEdit" width="100%"  x="{imgCorrect.width}"
+          verticalScrollPolicy="off"  focusAlpha="0" backgroundAlpha="0"  borderStyle="none"/>
+      </mx:AddChild>
+     <mx:RemoveChild target="{textMain}"/>
+    </mx:State>
+
+    <mx:State name="{state_correct_and_incorrect}" basedOn="{state_main}">
+      <mx:AddChild relativeTo="{vBoxContainer}" creationPolicy="all">
+            <mx:HBox id="hBoxIncorrect"  width="{this.width}" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off"  verticalGap="0" verticalAlign="top">
+              <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect"/>
+              <ns1:TextExended id="lbIncorrect" selectable="false" width="{this.width - imgIncorrect.width - 10}" fontSize="{this._fntSize}" />
+            </mx:HBox>
+      </mx:AddChild>
+      <mx:AddChild relativeTo="{vBoxContainer}" creationPolicy="all">
+            <mx:HBox id="hBoxCorrect"  width="{this.width}"  verticalScrollPolicy="off" horizontalScrollPolicy="off"  verticalGap="0" verticalAlign="top">
+              <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect"/>
+              <ns1:TextExended id="lbCorrect" selectable="false" width="{this.width - imgCorrect.width - 10}" fontSize="{this._fntSize}" />
+            </mx:HBox>
+      </mx:AddChild>
+        <mx:RemoveChild target="{textMain}"/>
+        <mx:RemoveChild target="{textEdit}"/>
+    </mx:State>
+
+
+    <mx:State name="{state_incorrect_lite}" basedOn="{state_correct_and_incorrect}">
+          <mx:RemoveChild target="{hBoxCorrect}" />
+    </mx:State>
+     <mx:State name="{state_correct_lite}" basedOn="{state_correct_and_incorrect}">
+          <mx:RemoveChild target="{hBoxIncorrect}" />
+    </mx:State>
+
+
+    <mx:State name="{state_correct}" basedOn="{state_correct_and_incorrect}">
+          <mx:AddChild relativeTo="{hBoxCorrect}" creationPolicy="all">
+              <mx:TextArea id="txtArCorrect" change="change_lbCorrect(event)" width="{lbCorrect.width}" height="{this.height}"
+                    verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundAlpha="0"  borderStyle="none" focusAlpha="0" selectable="false" htmlText="{lbCorrect.htmlText}" />
+          </mx:AddChild>
+          <mx:RemoveChild target="{lbCorrect}" />
+          <mx:RemoveChild target="{hBoxIncorrect}" />
+    </mx:State>
+
+    <mx:State name="{state_incorrect}" basedOn="{state_correct_and_incorrect}">
+           <mx:AddChild relativeTo="{hBoxIncorrect}" creationPolicy="all">
+              <mx:TextArea id="txtArIncorrect" change="change_lbIncorrect(event)" width="{lbIncorrect.width}" height="{this.height}"
+                    verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundAlpha="0"  borderStyle="none" focusAlpha="0" selectable="false"/>
+          </mx:AddChild>
+          <mx:RemoveChild target="{lbIncorrect}" />
+          <mx:RemoveChild target="{hBoxCorrect}" />
+    </mx:State>
+
+  </states>
+</BaseUIControl>

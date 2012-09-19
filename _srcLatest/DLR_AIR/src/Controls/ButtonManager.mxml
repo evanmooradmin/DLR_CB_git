@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml"  currentState="{state_main}" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="100%" horizontalCenter="0" horizontalAlign="center" minWidth="160">
+   <mx:Script>
+    <![CDATA[
+      import interfaces.IButtonManager;
+      import interfaces.IBasePrompt;
+      import mx.binding.utils.BindingUtils;
+      import mx.managers.CursorManager;
+      import Model.EmbededData;
+      import mx.events.FlexEvent;
+      import mx.effects.easing.Bounce;
+      import Controls.PromptControls.PromptControl;
+      import Controls.ActivityControl;
+      import mx.core.UIComponent;
+      /***************************************************************
+      *
+      *  Module Name:
+      *
+      *
+      *  Abstract:
+      *     Класс управляет кнопками Continue и Back в приложении. Данный класс можно
+      *     добавить к контролу и кнопки будут уже в том контроле в кторый его добавили
+      *     Это позволяет их перенросить куда угодно.
+      *    
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+    
+
+      /**
+      * Private members/properties
+      */
+
+      private const state_main:String = "state_main";
+      private const state_backButton:String = "state_backButton";
+      private const state_popUp:String = "state_popUp";
+
+      private var _fingerCursor:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+
+      //Если равно false то событие Click_Done не будет передаваться ActivityControl
+      //Нужно для того чтобы случайно денить не подписаться и не закрыть приложение если это не надо
+      private var _needDone:Boolean = false;
+
+     //контрол который на данный момент содержит кнопки и методы которого будуд дергатться при нажатии на них
+      private var _control:UIComponent;
+
+      /**
+      * Private methods
+      */
+       //Обработчик кнопки Continue
+       private function Click_btnContinue(event:MouseEvent):void
+       {
+          IButtonManager(_control).Click_btnContinue(event);
+       }
+
+      //Обработчик кнопки Back
+      private function Click_btnBack(event:MouseEvent):void
+      {
+         IButtonManager(_control).Click_btnBack(event);
+      }
+
+      private function Click_Done(event:MouseEvent):void
+      {
+        //проверка сделана для того чтобы вслучае если не отписались от данного обработчика не вызвать его  
+        if (_needDone == true)
+            IButtonManager(_control).Click_btnDone(event);
+      }
+
+      //метод отвечает за подготовку кнопок при создании контрола 
+      private function initializationButtons():void
+      {
+        this._needDone = false; 
+       
+        if (canButtons == null || btnContinue == null)
+        {
+          this.addEventListener(FlexEvent.CREATION_COMPLETE, creationCompleteHandler);
+          return;
+        }
+
+        if(canButtons.width >= (btnContinue.width + 180 + 30))
+            canButtons.width = btnContinue.width;
+        if (btnBack != null)
+            btnBack.visible = true;
+          
+        
+        btnContinue.removeEventListener(MouseEvent.CLICK, Click_Done);
+        btnContinue.addEventListener(MouseEvent.CLICK, Click_btnContinue);
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+        initializationButtons();
+      }
+
+      private function rollOver_buttonHandler(event:MouseEvent):void 
+      {
+      	if (CursorManager.currentCursorID != _cursorID)
+             _cursorID = CursorManager.setCursor(_fingerCursor);
+      }
+
+      private function rollOut_buttonHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorID);
+        _cursorID = -1;
+      }
+      
+      private function creationComplete_controlHandler(event:FlexEvent):void
+      {
+        btnContinue.label = IButtonManager(_control).currentStateControl.operationName;
+      }
+      
+      /**
+      * Initialization
+      */
+      //Метод инициализирует данный и принемает контрол
+      public  function Init(control:IButtonManager):void
+      {
+        this._control = control as UIComponent;
+       // BindingUtils.bindProperty(this, "width", control,"width");
+        this.setStyle("horizontalAlign","center");
+        initializationButtons();
+        if (IButtonManager(_control).currentStateControl != null)
+            btnContinue.label = IButtonManager(_control).currentStateControl.operationName;
+            
+        _control.addEventListener(FlexEvent.CREATION_COMPLETE, creationComplete_controlHandler);
+      }
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      
+
+      /**
+      * Public members/properties
+      */
+       public function set btnContinueLabel(value:String):void
+       {
+         btnContinue.label = value;
+       }
+
+       public function get parentControl():UIComponent
+       {
+         return this._control;
+       }
+      
+       
+      /**
+      * Public methods
+      */
+       public function SetStateMain():void
+       {
+          currentState = state_main;
+       }
+
+       public function SetStateBackButton():void
+       {
+         currentState = state_backButton;
+       }
+      //Метод подписывает кнопку на событие ClickDone и подготавливает кнопки
+       public function AddClickDoneEvent():void
+       {
+         btnContinue.addEventListener(MouseEvent.CLICK, Click_Done);
+         this._needDone = true;
+         btnBack.visible = false;
+         canButtons.width = btnContinue.width;
+       }
+	
+	   public function DeleteYourself():void
+	   {
+	   	 if (this.parent != null)
+	   	 	   this.parent.removeChild(this);			
+	   }	
+			
+    
+    ]]>
+  </mx:Script>
+  <mx:transitions>
+    <mx:Transition fromState="state_main" toState="state_backButton">
+      <mx:Resize widthTo="{btnContinue.width + 180 + 30}" target="{canButtons}" easingFunction="{Bounce.easeOut}"/> 
+    </mx:Transition>
+    <mx:Transition fromState="state_backButton" toState="state_main">
+      <mx:Resize widthTo="{btnContinue.width}" target="{canButtons}" easingFunction="{Bounce.easeOut}"/>
+    </mx:Transition>
+  </mx:transitions>
+
+<mx:states>
+  <mx:State name="{state_main}">
+      <mx:AddChild relativeTo="{canvBtnContinue}" creationPolicy="all">
+        <mx:Button id="btnContinue" styleName="button" width="180" height="40" buttonMode="true" paddingTop="5"/>
+      </mx:AddChild>
+  </mx:State>
+
+    <mx:State name="{state_backButton}" basedOn="{state_main}">
+      <mx:AddChild relativeTo="{canvBtnBack}" creationPolicy="all" position="0">
+        <mx:Button id="btnBack" label="BACK" click="Click_btnBack(event)" styleName="button"  buttonMode="true" paddingTop="5"
+           width="180" height="40"/>
+      </mx:AddChild>
+    </mx:State>
+</mx:states>
+
+      <mx:Canvas id="canButtons" verticalScrollPolicy="off" horizontalScrollPolicy="off" horizontalCenter="0" >
+        <mx:Canvas id="canvBtnBack" left="0" verticalCenter="0" verticalScrollPolicy="off" horizontalScrollPolicy="off"  />
+        <mx:Canvas id="canvBtnContinue" right="0" verticalCenter="0" verticalScrollPolicy="off" horizontalScrollPolicy="off" />
+      </mx:Canvas>
+</mx:HBox>

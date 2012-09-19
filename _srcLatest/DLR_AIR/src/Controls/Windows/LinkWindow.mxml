@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="314" height="132"
+  backgroundImage="@Embed(source='style/images/AlertWindow/bkg.jpg')">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import flash.net.navigateToURL;
+      import mx.managers.CursorManager;
+      import mx.core.UIComponent;
+      import mx.managers.PopUpManager;
+
+      private var _link:String = "";
+
+      private var HandIcon:Class = EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+      public static function Show(parent:UIComponent, headerText:String, alertText:String, link:String):LinkWindow
+      {
+        var linkWindow:LinkWindow = new LinkWindow();
+        linkWindow.link = link;
+
+        PopUpManager.addPopUp(linkWindow, parent, true);
+        PopUpManager.centerPopUp(linkWindow);
+
+        linkWindow.lnkBtnLink.label = link;
+        linkWindow.lbTitle.text = headerText;
+        linkWindow.txtContent.text = alertText;
+
+        return linkWindow;
+      }
+
+      public function set link(value:String):void
+      {
+        _link = value;
+      }
+
+      private function Click_btnOK(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+      }
+
+      private function RollOver_btnOK(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function RollOut_btnOK(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+      private function Click_lnkBtnLinkHandler(event:MouseEvent):void
+      {
+        navigateToURL(new URLRequest(_link));
+      }
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Label x="10" width="294" id="lbTitle" selectable="false" y="10"/>
+  <mx:Text width="294" id="txtContent" textAlign="center" selectable="false" y="36" x="10"/>
+  <mx:Button label="OK" styleName="ButtonOKAlerWindow" width="55" height="28" click="Click_btnOK(event)"
+    rollOver="RollOver_btnOK(event)" rollOut="RollOut_btnOK(event)" x="129.5" y="92"/>
+  <mx:LinkButton x="10" y="64" width="294" id="lnkBtnLink" click="Click_lnkBtnLinkHandler(event)"/>
+
+</mx:Canvas>

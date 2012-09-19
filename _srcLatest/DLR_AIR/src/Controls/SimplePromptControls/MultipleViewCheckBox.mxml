@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_checkBox}" xmlns:controls="Controls.Enviroment.*">
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import Model.Answers.MultipleAnswer;
+      import Model.Answers.SingleAnswer;
+      import Model.Answers.Answer;
+      import Model.EmbededData;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\MultipleCheckBox.mxml
+      *
+      *  Abstract:
+      *     This is control for multiple-view check box
+      *
+      *  Author:
+      *     Evgenij Welikij   02-November-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private const state_checkBox:String = "state_checkBox";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_default:String = "state_default";
+
+
+      private var _answer:MultipleAnswer;
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+      private function Click_chVariant(event:MouseEvent):void
+      {
+        if (chVariant.selected == true)
+        {
+            chVariant.setStyle("fontWeight", "bold");
+
+        }
+        else
+        {
+            chVariant.setStyle("fontWeight", "normal");
+
+        }
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        chVariant.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+        lbDefault.setStyle("fontFamily", _fontName);
+        visibleAnswer.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        chVariant.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+        lbDefault.setStyle("fontSize", _fontSize);
+        visibleAnswer.setStyle("fontSize", _fontSize);
+
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+
+        lbDefault.x = _fontSize;
+      }
+
+      public override function FontColor():void
+      {
+        chVariant.setStyle("color", _fontColor);
+        lbDefault.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function GetText():String
+      {
+        return chVariant.selected ? chVariant.label : null;
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        this._answer = answer as MultipleAnswer;
+         chVariant.label = _answer.text;
+      }
+
+      public override function IsComplete():Boolean
+      {
+        return chVariant.selected;
+      }
+
+      public override function Continue():void
+      {
+      }
+
+      public override function SetCorrect():void
+      {
+        if (this._answer != null && this._answer. VisibleAnswer != '')
+          visibleAnswer.text =  this._answer.VisibleAnswer;
+
+        currentState = state_correct;
+      }
+
+      public override function SetIncorrect():void
+      {
+
+       if (this._answer!= null && this._answer.VisibleAnswer != '')
+           visibleAnswer.text =  this._answer.VisibleAnswer;
+
+        currentState = state_incorrect;
+      }
+
+      public override function DefaultFont():void
+      {
+        chVariant.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+        visibleAnswer.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+        lbDefault.setStyle("fontFamily", "EMComic");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._answer.result = chVariant.selected;
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+       chVariant.selected = this._answer.result; 
+      }
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+      public function SetDefault():void
+      {
+        currentState = state_default;
+      }
+
+      public function selected(selected:Boolean):void
+      {
+        if (selected == true)
+            chVariant.setStyle("fontWeight", "bold");
+        else
+            chVariant.setStyle("fontWeight", "normal");
+      }
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_checkBox}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:CheckBox id="chVariant" click="Click_chVariant(event)"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox horizontalGap="0" verticalAlign="middle">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect"/>
+          <mx:Text id="lbCorrect" color="#00c35f" selectable="false" htmlText="{chVariant.label}"/>
+          <mx:Text id="visibleAnswer" color="#858586" selectable="false"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox horizontalGap="0" verticalAlign="middle" >
+          <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect"/>
+          <mx:Text id="lbIncorrect" color="#e54e49" selectable="false" htmlText="{chVariant.label}"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_default}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <controls:TextExended id="lbDefault" selectable="false" htmlText="{chVariant.label}"/>
+      </mx:AddChild>
+    </mx:State>
+  </states>
+</BaseUIControl>

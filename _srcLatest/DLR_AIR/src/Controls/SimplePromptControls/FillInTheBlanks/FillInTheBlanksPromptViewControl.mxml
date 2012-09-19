@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_edit}" width="{ActivityControl.MAX_WIDTH - 60}" xmlns:FlowBox="Controls.FlowBox.*"
+  creationComplete="creationCompleteHandler(event)" xmlns:controls="Controls.Enviroment.*" >
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import mx.controls.Text;
+      import flash.text.engine.TextElement;
+      import mx.controls.TextArea;
+      import mx.controls.TextInput;
+      import Controls.Enviroment.TextExended;
+      import Model.EnumRegExp;
+      import Model.FactoryRegExp;
+      import Controls.ActivityControl;
+      import mx.core.UIComponent;
+      import mx.controls.Label;
+      import mx.events.FlexEvent;
+      import Controls.SelectableLabel;
+      import Model.EmbededData;
+      import Model.StateTypes;
+      import Model.Events.StateEvent;
+      import Model.Prompts.FillInTheBlanks;
+      import Model.Prompts.Prompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\FillInTheBlanks\FillInTheBlanksPromptViewControl.mxml
+      *
+      *  Abstract:
+      *     This is view control for fill in the blanks
+      *
+      *  Author:
+      *     Evgenij Welikij   03-November-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      protected var _prompt:FillInTheBlanks;
+      protected var _isContinue:Boolean = false;
+
+
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_only_correct:String = "state_only_correct";
+
+    
+      private var _txtInputs:Vector.<TextInput> = new Vector.<TextInput>();
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false;
+      
+      
+      /**
+      * Private methods
+      */
+      private function TextInputMaxWidth():void
+      {
+        if (_prompt != null)
+        {
+           for each (var item:UIComponent in flowBox.getChildren())
+            {
+             if (item is TextInput)
+             {
+               item.width = item.measureText(_prompt.answer + "w").width;
+               if (item.width < 50)
+                  item.width = 100;
+             }
+           }
+        }
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function UpdateComplete_controlHandler(event:FlexEvent):void
+      {
+        // делаем label ровно по длинне текста
+        var label:Text = event.currentTarget as Text;
+        var lineMetrics:TextLineMetrics = label.measureText(label.text);
+        if (label.text != " " && label.text != "")
+        {
+           // label.width = lineMetrics.width;
+           // label.width = lineMetrics.width + lineMetrics.x * 4;
+        }
+        else
+            label.width = lineMetrics.width;
+      }
+
+      private function UpdateComplete_txtInputHandler(event:FlexEvent):void
+      {
+        var txtInput:TextInput = event.currentTarget as TextInput;
+        var width:int = txtInput.measureText(_prompt.answer).width;
+
+        txtInput.minWidth = txtInput.measureText("1234567").width;
+        txtInput.maxWidth = txtInput.measureText("12345678901234567890").width;
+
+        if (width >= txtInput.minWidth && width <= txtInput.maxWidth)
+          txtInput.width = width;
+        else if (width < txtInput.minWidth)
+          txtInput.width = txtInput.minWidth;
+        else if (width > txtInput.maxWidth)
+          txtInput.width = txtInput.maxWidth;
+      }
+
+      private  function creationCompleteHandler(event:FlexEvent):void
+      {
+        //Применяем стили к элементам, по другому не работало
+         flowBox.setStyle("fontFamily", this._fontName);
+         flowBox.setStyle("fontSize", this._fontSize);
+         TextInputMaxWidth();
+      }
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        flowBox.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        vbStrings.setStyle("fontFamily", _fontName);
+
+        for each (var chaild:UIComponent in flowBox.getChildren())
+        {
+           if (chaild is TextInput)
+                chaild.setStyle("fontFamily", "EMComic");
+        }
+
+        TextInputMaxWidth();
+      }
+
+      public override function FontSize():void
+      {
+       
+        flowBox.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+        vbStrings.setStyle("fontSize", _fontSize);
+
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+
+        TextInputMaxWidth();
+      }
+
+      public override function FontColor():void
+      {
+        flowBox.setStyle("color", _fontColor);
+        lbCorrect.setStyle("color", _fontColor);
+        lbIncorrect.setStyle("color", _fontColor);
+
+        for each (var item:Label in vbStrings.getChildren())
+          item.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+            return true;
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+         if (item is TextInput && FactoryRegExp.trim((item as TextInput).text) == "")
+         {
+   //     if (textArea.text != "")
+            return false;
+         }
+        }
+        return true;
+      }
+
+
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        this._prompt = prompt as FillInTheBlanks;
+        if (_prompt.existInsertPlace)
+        {
+          var separatorPattern:RegExp = new RegExp(Prompt.separatorPatternString, "g");
+
+          // заменяем все переносы каретки на "<br/>"
+          var textTemp:String = _prompt.text;
+
+          textTemp = textTemp.replace(/[\r\n]|[\n\r]/g, FactoryRegExp.BR);
+
+          textTemp = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.U_start(EnumRegExp.G), FactoryRegExp.instance.U_finish(EnumRegExp.G),
+                                                                FactoryRegExp.U_START, FactoryRegExp.U_FINISH, textTemp);
+          textTemp = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.B_start(EnumRegExp.G), FactoryRegExp.instance.B_finish(EnumRegExp.G),
+                                                                FactoryRegExp.B_START, FactoryRegExp.B_FINISH, textTemp);
+
+          var countTextInputs:int = textTemp.split(separatorPattern).length - 1;
+          var parts:Array = textTemp.split(separatorPattern);
+
+          for each (var part:String in parts)
+          {
+              part = part.replace(FactoryRegExp.instance.BR(EnumRegExp.G), "\n");
+
+              var words:Array = part.split(" ");
+              var text:TextExended = null;
+
+              for each (var word:String in words)
+              {
+                text = new TextExended();
+                text.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_controlHandler);
+                text.selectable = false;
+
+                if (word == "" || word == " ")
+                    text.HtmlText += " ";
+                else
+                    text.HtmlText = word == "" ? " " : word;
+                flowBox.addChild(text);
+              }
+              // Создаем поля для ввода текста
+              if (countTextInputs)
+              {
+                var txtInput:TextInput = new TextInput();
+                txtInput.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_txtInputHandler);
+
+                _txtInputs.push(txtInput);
+                flowBox.addChild(txtInput);
+                countTextInputs--;
+              }
+            }
+        }
+        else
+        {
+          var label:TextExended = new TextExended();
+          label.selectable = false;
+          label.htmlText = _prompt.text;
+
+          // удаление всех переносов каретки
+          label.htmlText = label.htmlText.replace(/[\r\n]|[\n\r]/g, "");
+
+          label.maxWidth = this.width - 30;
+          vbStrings.addChild(label);
+          txtInput = new TextInput();
+          flowBox.addChild(txtInput);
+        }
+       }
+
+      public override function GetText():String
+      {
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+         if (item is TextInput && (item as TextInput).text != "")
+             return (item as TextInput).text;
+        }
+        return '';
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+          if (currentState == state_edit)
+              currentState = state_only_correct;
+          else
+             currentState = state_correct;
+
+          lbCorrect.htmlText = "";
+
+          for each (var item:Label in vbStrings.getChildren())
+            lbCorrect.htmlText += item.htmlText + "\n";
+
+          for each (var chaild:UIComponent in flowBox.getChildren())
+           {
+             if (chaild is TextExended)
+                 lbCorrect.htmlText += (chaild as TextExended).HtmlText + " ";
+             else if (chaild is TextInput)
+                //выделяем введенный пользователем текст красным цветом
+                lbCorrect.htmlText +=  '<font face="EMComic" color="#' + SelectableLabel.IntToHex(EmbededData.inctance.iconCorrectColor.toString()) + '">'+ _prompt.answer + "</font> ";
+           }
+
+          lbCorrect.htmlText = lbCorrect.htmlText.replace(new RegExp('(<\\s*?/u\\s*?>)(\\s+?)(<\\s*?u\\s*?>)','g'),' ');
+
+          // заменяем все переносы каретки на "<br/>"
+          lbCorrect.htmlText = lbCorrect.htmlText.replace(/[\r\n]|[\n\r]/g, FactoryRegExp.BR);
+          lbCorrect.htmlText = FactoryRegExp.NormalazeString(lbCorrect.htmlText);
+          lbCorrect.htmlText = lbCorrect.htmlText.replace(FactoryRegExp.instance.BR_spaces(EnumRegExp.G), "\n");
+        }
+      }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+        {
+          currentState = state_incorrect;
+
+          lbIncorrect.htmlText = "";
+
+          for each (var item:Label in vbStrings.getChildren())
+            lbIncorrect.htmlText += item.htmlText + "\n";
+
+          for each (var chaild:UIComponent in flowBox.getChildren())
+          {
+            if (chaild is TextExended)
+              lbIncorrect.htmlText += (chaild as TextExended).HtmlText + " ";
+            else if (chaild is TextInput)
+              //выделяем введенный пользователем текст красным цветом
+              lbIncorrect.htmlText +=  '<font face="EMComic" color="#' + SelectableLabel.IntToHex(EmbededData.inctance.iconIncorrectColor.toString()) + '">'+ (chaild as TextInput).text + "</font> ";
+          }
+          // заменяем все переносы каретки на "<br/>"
+          lbIncorrect.htmlText = lbIncorrect.htmlText.replace(/[\r\n]|[\n\r]/g, FactoryRegExp.BR);
+          lbIncorrect.htmlText = lbIncorrect.htmlText.replace(new RegExp('(<\\s*?/u\\s*?>)(\\s+?)(<\\s*?u\\s*?>)','g'),' ');
+          lbIncorrect.htmlText = FactoryRegExp.NormalazeString(lbIncorrect.htmlText);
+          lbIncorrect.htmlText = lbIncorrect.htmlText.replace(FactoryRegExp.instance.BR_spaces(EnumRegExp.G), "\n");
+        }
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+        this.currentState = state_only_correct;
+      }
+
+      public override function DefaultFont():void
+      {
+        this._fontName = "Futura";
+        flowBox.setStyle("fontFamily", "Futura");
+        lbCorrect.setStyle("fontFamily", "Futura");
+        lbIncorrect.setStyle("fontFamily", "Futura");
+
+        vbStrings.setStyle("fontFamily", "Futura");
+
+        for each (var chaild:UIComponent in flowBox.getChildren())
+        {
+           if (chaild is TextInput)
+                chaild.setStyle("fontFamily", "EMComic");
+        }
+      }
+
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        var resultText:String = "";
+        for each (var chaild:UIComponent in flowBox.getChildren())
+        {
+          if (chaild is TextInput)
+              resultText += Prompt.separator + (chaild as TextInput).text;
+        } 
+         resultText = resultText.replace(new RegExp(Prompt.separatorPatternString, ""),"")
+         this._prompt.result =  resultText;
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (needCheckAnswer)
+            _isDeserialize = true;
+        if (this._prompt.result != null)
+        {
+           var userAnswers:Array = (this._prompt.result as String).split(Prompt.separator);
+           userAnswers.reverse();
+           for (var i:int = 0; i < flowBox.getChildren().length; i++)
+           {
+             if (flowBox.getChildren()[i] is TextInput)
+                 (flowBox.getChildren()[i] as TextInput).text = userAnswers.pop();
+           } 
+        }
+        
+        
+        
+      }
+      
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+
+    ]]>
+  </mx:Script>
+
+  <transitions>
+    <mx:Transition fromState="{state_incorrect}" toState="{state_correct}">
+      <mx:Parallel id="showPromptEffect" target="{hBoxCorrect}">
+        <mx:Resize duration="300" heightFrom="0" id="showResizeEffect"/>
+        <mx:Sequence>
+          <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0"/>
+          <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1"/>
+        </mx:Sequence>
+      </mx:Parallel>
+    </mx:Transition>
+  </transitions>
+
+  <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:VBox horizontalScrollPolicy="off" id="VbContainer" verticalGap="0" width="{this.width}" maxWidth="{this.width}">
+             <mx:VBox id="vbStrings" verticalGap="0" width="100%"/>
+              <FlowBox:FlowBox  horizontalScrollPolicy="off" id="flowBox" horizontalGap="0" maxWidth="{this.width}" verticalScrollPolicy="off" />
+            </mx:VBox>
+       </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}" basedOn="{state_edit}">
+      <mx:AddChild relativeTo="{VbContainer}" creationPolicy="all">
+        <mx:HBox id="HbIncorrectContainer" verticalAlign="middle" width="{VbContainer.width}">
+          <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect"/>
+          <controls:TextExended id="lbIncorrect"  selectable="false" maxWidth="{HbIncorrectContainer.width - imgIncorrect.width - 10}"/>
+        </mx:HBox>
+      </mx:AddChild>
+      <mx:RemoveChild  target="{flowBox}"/>
+      <mx:RemoveChild  target="{vbStrings}"/> 
+    </mx:State>
+
+    <mx:State name="{state_correct}" basedOn="{state_incorrect}">
+      <mx:AddChild relativeTo="{VbContainer}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" id="hBoxCorrect" width="{VbContainer.width}">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect"/>
+          <controls:TextExended id="lbCorrect" selectable="false" width="{hBoxCorrect.width - imgCorrect.width - 10}"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+     <mx:State name="{state_only_correct}" basedOn="{state_correct}">
+       <mx:RemoveChild  target="{HbIncorrectContainer}"/>
+    </mx:State>
+
+  </states>
+</BaseUIControl>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TextArea xmlns:mx="http://www.adobe.com/2006/mxml" keyDown="KeyDownHandler(event)">
+  <mx:Script>
+    <![CDATA[
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\Enviroment\AutoResizableTextArea.mxml
+      *
+      *  Abstract:
+      *     Контролл поддерживает возможность авторозширение высоты
+      *
+      *  Author:
+      *     Evgenij Welikij   13-April-2010
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      // по умолчанию эта опция отключена
+      private var _autoResizable:Boolean = false;
+
+
+      /**
+      * Private methods
+      */
+      private function ResizeTextArea():void
+      {
+        var totalHeight:uint = 10;
+
+        this.validateNow();
+
+        var noOfLines:int = this.mx_internal::getTextField().numLines;
+
+        for (var i:int = 0; i < noOfLines; i++)
+        {
+          var textLineHeight:int = this.mx_internal::getTextField().getLineMetrics(i).height;
+
+          totalHeight += textLineHeight;
+        }
+
+        this.height = totalHeight;
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function KeyDownHandler(event:KeyboardEvent):void
+      {
+        if (_autoResizable)
+          ResizeTextArea();
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function set text(value:String):void
+      {
+        super.text = value;
+
+       // if (_autoResizable)
+       //   ResizeTextArea();
+      }
+
+      public override function set htmlText(value:String):void
+      {
+        super.htmlText = value;
+
+        //if (_autoResizable)
+        //  ResizeTextArea();
+      }
+
+      protected override function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+      {
+        super.updateDisplayList(unscaledWidth, unscaledHeight);
+
+        if (_autoResizable)
+          ResizeTextArea();
+      }
+
+
+      /**
+      * Public members/properties
+      */
+      [Bindable(event="changeAutoResize")]
+      public function get autoResizeble():Boolean
+      {
+        return _autoResizable;
+      }
+      public function set autoResizeble(value:Boolean):void
+      {
+        _autoResizable = value;
+
+        if (this.mx_internal::getTextField() != null && _autoResizable == true)
+          ResizeTextArea();
+
+        dispatchEvent(new Event("changeAutoResize"));
+      }
+
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+</mx:TextArea>

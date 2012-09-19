@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Image xmlns:mx="http://www.adobe.com/2006/mxml" initialize="initializeHandler(event)" >
+
+<mx:Script>
+<![CDATA[
+  import Model.EmbededData;
+  import mx.events.FlexEvent;
+    /***************************************************************
+    *
+    *  Module Name:
+    *     
+    *
+    *  Abstract:
+    *     Картинка которая показывает правелен или нет ответ пользователя, отображаеться только при просмотре отчета в заголовке каждого
+    *     промпта
+    *     
+    *  Author:
+    *     Ruban Sergey   
+    *
+    *  Revision History:
+    *
+    ***************************************************************/
+        
+        
+    /**
+    * Static
+    */
+    
+    
+    /**
+    * Private members/properties
+    */
+    //Состояние в котором отображаеться галочка
+     private const state_correctView:String = "state_correctView";
+    //Состояние в котором отображаеться крестик
+     private const state_incorrectView:String = "state_incorrectView";
+    // Состояние в котором отображаеться вопрос
+     private const state_question:String = "state_question";
+    
+    /**
+    * Private methods
+    */
+          
+        
+    /**
+    * Events handler
+    */
+    private function initializeHandler(event:FlexEvent):void
+    {
+      this.visible = false;
+      this.width = 0;
+      this.height = 0;
+    }    
+        
+    /** 
+    * Initialization
+    */
+        
+        
+    /**
+    * Constructor 
+    */
+    
+    
+    /**
+    * Virtuals methods
+    */
+        
+        
+    /**
+    * Public members/properties
+    */
+    //Возвращает ширину картинки
+    public function get imageWidth():int
+    {
+      return 30;
+    }
+      
+    /**
+    * Public methods
+    */
+     public function setStateCorrectView():void
+     {
+//       this.source = EmbededData.inctance.iconCorrect;
+//       this.width = 30;
+//       this.height = 30;
+//       this.visible = true;
+       
+     }
+     
+     public function setStateIncorrectView():void
+     {
+//       this.source = EmbededData.inctance.iconIncorrect;
+//       this.width = 30;
+//       this.height = 30;
+//       this.visible = true;
+      
+     }
+     
+     public function setStateQuestionView():void
+     {
+//       this.source = EmbededData.inctance.iconQuestion;
+//       this.width = 30;
+//       this.height = 30;
+//       this.visible = true;
+      
+     } 
+     
+     public function ChoiceState(value:Boolean):void
+     {
+//       if (value)
+//           setStateCorrectView();
+//       else  
+//           setStateIncorrectView();
+     }
+     
+]]>
+</mx:Script>
+  
+</mx:Image>

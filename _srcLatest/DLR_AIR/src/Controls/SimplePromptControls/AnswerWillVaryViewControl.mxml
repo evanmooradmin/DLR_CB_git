@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" 
+   creationComplete="creationCompleteHandler();" horizontalAlign="right" verticalAlign="middle" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+   xmlns:controls="Controls.Enviroment.*">
+  <mx:Script>
+    <![CDATA[
+      import Model.Events.AnswerWillVaryViewControlEvent;
+      import Controls.QuizControl;
+      import Controls.SimplePromptControls.Open_endedWritingPrompt.Open_endedWritingPromptAdvanced;
+      import mx.core.Application;
+      import mx.controls.PopUpButton;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+      import Controls.ActivityControl;
+      
+      private static const LAST_CHILD:String = "lastChild";
+      private static const FIRST_CHILD:String = "firstChild";
+      
+      private static const STATE_SHOW:String = "state_show";
+      [Bindable]
+      private var position:String = LAST_CHILD;
+      
+      public var parentObject:UIComponent; 
+      
+      private var _isShow:Boolean = false;
+      private var _isShowNow:Boolean = false;
+      private static var leftToRightOpen:Boolean;
+      
+      public static function Show(parent:UIComponent, headerText:String, point:Point, FontName:String, FontSize:int, FontColor:int, diffWidth:Number = 0, leftToRightOpen:Boolean = false):AnswerWillVaryViewControl
+      {
+        AnswerWillVaryViewControl.leftToRightOpen = leftToRightOpen;
+        var answerWillVary:AnswerWillVaryViewControl = new AnswerWillVaryViewControl();
+        
+        PopUpManager.addPopUp(answerWillVary, parent);
+        
+        answerWillVary.x = point.x - (leftToRightOpen ? diffWidth : 0);
+        answerWillVary.y = point.y;
+        answerWillVary.maxWidth = parent.width + diffWidth;
+        answerWillVary.width = parent.width + diffWidth;
+        answerWillVary.txtContent.htmlText = headerText;
+        answerWillVary.parentObject = parent;
+        
+        answerWillVary.txtContent.setStyle("fontFamily", 'EMComic');
+        answerWillVary.txtContent.setStyle("fontSize", 14);
+        answerWillVary.txtContent.setStyle("color",0x6C6F70);
+        
+        answerWillVary.lbHeaderText.setStyle("fontFamily",'EMComic');
+        answerWillVary.lbHeaderText.setStyle("fontSize", 14);
+        answerWillVary.lbHeaderText.setStyle("color",0x2C75BB);
+        
+       
+        answerWillVary.hBoxContainer.setStyle("borderStyle", "solid");
+        answerWillVary.hBoxContainer.setStyle("borderThickness", 2);
+        answerWillVary.hBoxContainer.setStyle("cornerRadius", 3);
+        answerWillVary.hBoxContainer.setStyle("borderColor", 0x88C4DE);
+        
+        if(leftToRightOpen)
+        {
+          answerWillVary.setStyle("horizontalAlign", "left");
+          answerWillVary.setStyle("verticalAlign", "bottom");
+          answerWillVary.hBoxContainer.setStyle("verticalAlign", "bottom");
+          answerWillVary.btnShow.styleName = "ButtonHideDefinitionRight";
+//          answerWillVary.rotateButton();
+          answerWillVary.position = FIRST_CHILD;
+        }
+        else
+        {
+          answerWillVary.setStyle("horizontalAlign", "right");
+          answerWillVary.setStyle("verticalAlign", "middle");
+          answerWillVary.hBoxContainer.setStyle("verticalAlign", "middle");
+          answerWillVary.btnShow.styleName = "ButtonHideDefinition";
+          answerWillVary.position = LAST_CHILD;
+        }
+        answerWillVary.currentState = STATE_SHOW;
+        
+        //answerWillVary.cnvBorder.filters = [new DropShadowFilter(5,35,13290701)];
+        return answerWillVary;
+      }
+      private function rotateButton():void
+      {
+        var offsetWidth:Number = btnShow.width / 2;
+        var offsetHeight:Number = btnShow.height / 2;
+        var tempMatrix:Matrix = btnShow.transform.matrix;
+        tempMatrix.translate(-offsetWidth, -offsetHeight);
+        tempMatrix.rotate(Math.PI);
+        tempMatrix.translate(+offsetWidth, +offsetHeight);
+
+        btnShow.transform.matrix = tempMatrix;
+      }
+
+
+      private function Clik_ApplicationHandler(event:MouseEvent):void
+      {
+        if (_isShowNow == false)
+        {
+          this.ParallelEffectHide.play();
+          systemManager.removeEventListener(MouseEvent.CLICK, Clik_ApplicationHandler);
+        }
+      }
+
+      private function creationCompleteHandler():void
+      {
+        if (leftToRightOpen)
+        {
+          this.y += hBoxContainer.height;
+        }
+        else
+        {
+          this.y -= this.height / 2;
+          this.y += parentObject.height / 2;
+        }
+        this.hbox.width += 15;
+        hBoxContainer.filters = [new DropShadowFilter(5, 35, 13290701)];
+        fadeEffectHide.targets = [hBoxContainer];
+
+        systemManager.addEventListener(MouseEvent.CLICK, Clik_ApplicationHandler);
+        this.ParallelEffectShow.play();
+      }
+
+     
+     
+     private function Clik_btnShowHandler(event:MouseEvent):void
+     {
+       if (_isShowNow == false)
+       {
+           systemManager.removeEventListener(MouseEvent.CLICK, Clik_ApplicationHandler);
+           this.ParallelEffectHide.play();
+       }
+     }  
+  
+     private function effectEnd_ParallelEffectHideHindler():void
+     {
+        dispatchEvent(new AnswerWillVaryViewControlEvent(AnswerWillVaryViewControlEvent.ANSWER_WILL_VARY_EVENT, true));
+        PopUpManager.removePopUp(this);
+     } 
+     
+//    <mx:Parallel id="ParallelEffectShow"  effectStart="{this._isShowNow = true}" effectEnd="{this._isShowNow = false}" >
+//    <mx:Rotate angleFrom="0" angleTo="180" target="{btnShow}"/>
+//    <mx:Fade  id="moveEffectShow" alphaFrom="0" alphaTo="1" duration="450" target="{this}"/>
+//    </mx:Parallel>
+//  
+//    <mx:Parallel id="ParallelEffectHide" effectEnd="effectEnd_ParallelEffectHideHindler()" effectStart="{this._isShowNow = true}">
+//    <mx:Rotate angleFrom="180" angleTo="0" target="{btnShow}" duration="400" />
+//    <mx:Fade id="fadeEffectHide"  alphaFrom="1" alphaTo="0" />
+//    </mx:Parallel>
+ 
+     
+    ]]>
+  </mx:Script>
+  <mx:Parallel id="ParallelEffectShow"  effectStart="{this._isShowNow = true}" effectEnd="{this._isShowNow = false}" >
+    <mx:Fade  id="moveEffectShow" alphaFrom="0" alphaTo="1" duration="450" target="{this}"/>
+  </mx:Parallel>
+  
+  <mx:Parallel id="ParallelEffectHide" effectEnd="effectEnd_ParallelEffectHideHindler()" effectStart="{this._isShowNow = true}">
+    <mx:Fade id="fadeEffectHide"  alphaFrom="1" alphaTo="0" />
+  </mx:Parallel>
+  
+  
+  <mx:states>
+    <mx:State name="{STATE_SHOW}" >
+      <mx:AddChild relativeTo="{hBoxContainer}" creationPolicy="all" position="{position}"> <!-- "firstChild"  "lastChild" -->
+        <mx:Button id="btnShow" click="Clik_btnShowHandler(event)" styleName="ButtonHideDefinition"/>
+      </mx:AddChild>
+    </mx:State>
+  </mx:states>
+  
+  
+  <mx:HBox verticalAlign="middle" id="hBoxContainer" maxWidth="{this.maxWidth}" verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundColor="#FFFFFF">
+      <mx:HBox id="hbox" backgroundColor="0xFFFFFF" verticalAlign="middle" height="100%">
+        <mx:Label id="lbHeaderText" text="Suggested Answer:" selectable="false" />
+        <controls:TextExended id="txtContent" selectable="false" maxWidth="{this.width - lbHeaderText.width - btnShow.width - 50 }" />
+      </mx:HBox>
+  </mx:HBox>
+  
+ 
+</mx:HBox>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="340" height="200" backgroundColor="#FFFFFF"
+    filters="{[new DropShadowFilter(8, 45, 0, .5)]}" creationCompleteEffect="Fade" fontFamily="OptimaLT" 
+    borderColor="#666666" borderStyle="solid">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.managers.CursorManager;
+      import mx.core.UIComponent;
+      import mx.managers.PopUpManager;
+
+      private var _callBack:Function;
+
+      private var HandIcon:Class = EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+      public static function Show(parent:UIComponent, headerText:String, alertText:String, callBack:Function = null):AlertWindow
+      {
+        var alertWindow:AlertWindow = new AlertWindow();
+        alertWindow.callBack = callBack;
+
+        PopUpManager.addPopUp(alertWindow, parent, true);
+        PopUpManager.centerPopUp(alertWindow);
+
+        alertWindow.lbTitle.text = headerText;
+        alertWindow.txtContent.text = alertText;
+
+        return alertWindow;
+      }
+
+      public function set callBack(value:Function):void
+      {
+        _callBack = value;
+      }
+
+      private function Click_btnOK(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+        if (_callBack != null)
+          _callBack();
+      }
+
+      private function RollOver_btnOK(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function RollOut_btnOK(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+
+    ]]>
+  </mx:Script>
+  <mx:Canvas width="100%" height="35" backgroundColor="#26a9e0">
+        <mx:Label x="10" width="294" id="lbTitle" selectable="false" top="10" verticalCenter="0" fontSize="20"/>
+ </mx:Canvas>       
+  <mx:Text width="294" id="txtContent" textAlign="center" selectable="false" verticalCenter="0" horizontalCenter="0" fontSize="15" />
+  <mx:Button label="OK" styleName="button" width="125" height="30" click="Click_btnOK(event)" buttonMode="true"
+     horizontalCenter="0" bottom="10"/>
+
+</mx:Canvas>

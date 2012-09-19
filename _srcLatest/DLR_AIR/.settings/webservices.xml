@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectRoot>
+<url value="https://www.evan-moor.com/updates/FlashUpdate.asmx?wsdl">
+<service name="FlashUpdate">
+<port name="FlashUpdateSoap">
+<operations>
+<operation name="UpdateCheck(parameters: UpdateCheck): UpdateCheckResponse"/>
+<operation name="GetMD5HashFromRemoteFile(parameters: GetMD5HashFromRemoteFile): GetMD5HashFromRemoteFileResponse"/>
+<operation name="GetFile(parameters: GetFile): GetFileResponse"/>
+<operation name="ResetDownload(parameters: ResetDownload): ResetDownloadResponse"/>
+<operation name="UpdateXMLInformation(parameters: UpdateXMLInformation): UpdateXMLInformationResponse"/>
+<operation name="CreateEmcDir(parameters: CreateEmcDir): CreateEmcDirResponse"/>
+<operation name="UploadXML(parameters: UploadXML): UploadXMLResponse"/>
+</operations>
+</port>
+</service>
+<asPackage absPath="P:\Active\EvanMoorEducationalPublishers\interactiveApps\DLR\_srcLatest\DLR_AIR\src\generated" name="generated">
+<mainAsClass name="WebService.as"/>
+<otherAsClass name="UpdateCheckResultEvent.as"/>
+<otherAsClass name="CreateEmcDir_request.as"/>
+<otherAsClass name="ResetDownloadResultEvent.as"/>
+<otherAsClass name="CreateEmcDirResultEvent.as"/>
+<otherAsClass name="UploadXML_request.as"/>
+<otherAsClass name="GetMD5HashFromRemoteFileResultEvent.as"/>
+<otherAsClass name="ResetDownload_request.as"/>
+<otherAsClass name="BaseWebServiceSchema.as"/>
+<otherAsClass name="IWebService.as"/>
+<otherAsClass name="UpdateXMLInformationResultEvent.as"/>
+<otherAsClass name="GetFile_request.as"/>
+<otherAsClass name="UpdateXMLInformation_request.as"/>
+<otherAsClass name="UpdateCheck_request.as"/>
+<otherAsClass name="GetFileResultEvent.as"/>
+<otherAsClass name="BaseWebService.as"/>
+<otherAsClass name="ArrayOfString.as"/>
+<otherAsClass name="GetMD5HashFromRemoteFile_request.as"/>
+<otherAsClass name="UploadXMLResultEvent.as"/>
+</asPackage>
+</url>
+</projectRoot>

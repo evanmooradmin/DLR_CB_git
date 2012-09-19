@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"  implements="interfaces.IFontStyle, interfaces.IDirection,
+  interfaces.IDragAndDrop" minWidth="{_defaultWidth}" width="{_defaultWidth}" height="40" backgroundColor="#FFFFFF"
+  updateComplete="UpdateComplete(event)" dragEnter="DragEnterHandler(event)" dragExit="DragExitHandler(event)"
+  dragDrop="DragDropHandler(event)" verticalScrollPolicy="off" horizontalScrollPolicy="off" currentState="{state_dropAnswer}" >
+
+  <mx:Script>
+    <![CDATA[
+      import mx.binding.utils.BindingUtils;
+      import mx.events.ResizeEvent;
+      import Controls.AnswerControls.DragAnswers.DragAnswerControl;
+      import mx.events.EffectEvent;
+      import mx.events.DragEvent;
+      import mx.events.FlexEvent;
+      import mx.core.UIComponent;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\DropAnswerControl.mxml
+      *
+      *  Abstract:
+      *     This is drop answer control
+      *
+      *  Author:
+      *     Evgenij Welikij   26-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static const state_base:String = "state_base";
+      public static const state_dropAnswer:String = "state_dropAnswer";
+      public static const state_droppedAnswer:String = "state_droppedAnswer";
+      public static const state_moveAnswer:String = "state_moveAnswer";
+
+
+      /**
+      * Private members/properties
+      */
+      private var _showBorder:Boolean = true;
+      private var _isShadowDragObject:Boolean;      // указывает на присутствие тени у бросающего объекта
+      private var _dropObject:DragAnswerControl;
+      private var _dragPolicy:Boolean = false;      //   указывает на наличие перетаскивания
+      
+      private var _statedroppedAnswerActive:Boolean = false;
+
+      [Bindable]
+      private var _defaultWidth:int = 200;
+      
+      protected var _fontName:String;
+      protected var _fontSize:int;
+      protected var _fontColor:int;
+      
+      private var _fontNameChanged:Boolean = false;
+      private var _fontSizeChanged:Boolean = false;
+      private var _fontColorChanged:Boolean = false;
+
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+      private function UpdateComplete(event:FlexEvent):void
+      {
+        imgBackground.graphics.clear();
+
+        if (_showBorder)
+        {
+          DashedLine.DrawLine(new Point(0, 0), new Point(width - 1, 0), 0x969799, imgBackground);
+          DashedLine.DrawLine(new Point(width - 1, 0), new Point(width - 1, height - 1), 0x969799, imgBackground);
+          DashedLine.DrawLine(new Point(width - 1, height - 1), new Point(0, height - 1), 0x969799, imgBackground);
+          DashedLine.DrawLine(new Point(0, height - 1), new Point(0, 0), 0x969799, imgBackground);
+        }
+        if (_statedroppedAnswerActive == true)
+            currentState = state_droppedAnswer;
+      }
+
+      private function DragEnterHandler(event:DragEvent):void
+      {
+        glow.play();
+        _dragPolicy = true;
+        if (_dropObject != null && event.dragInitiator == _dropObject)  
+        {
+          _statedroppedAnswerActive = false; 
+          _showBorder = true; 
+          if (currentState != state_moveAnswer)
+              currentState = state_moveAnswer; 
+        } 
+      }
+
+      private function DragExitHandler(event:DragEvent):void
+      {
+        glow.stop();
+        _dragPolicy = false;
+     
+      }
+
+      private function EffectEnd_glowHandler(event:EffectEvent):void
+      {
+        if (_dragPolicy == true)
+          glow.play();
+      }
+
+      private function DragDropHandler(event:DragEvent):void
+      {
+        glow.end();
+        _dragPolicy = false;
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      protected override function commitProperties():void
+      {
+          if (_fontNameChanged)
+              FontName();
+          if (_fontSizeChanged)
+              FontSize();
+          if (_fontColorChanged)
+              FontColor();
+              
+          _fontNameChanged = false;
+          _fontSizeChanged = false;  
+          _fontColorChanged = false;
+       
+          super.commitProperties(); 
+      }
+      
+      public virtual function FontName():void
+      {
+        if (_dropObject != null)
+          _dropObject.fontName = _fontName;
+      }
+
+      public virtual function FontSize():void
+      {
+        if (_dropObject != null)
+        {
+          _dropObject.fontSize = _fontSize;
+          if (this.width < _dropObject.width)
+            this.width = _dropObject.width;
+        }
+      }
+
+      public virtual function FontColor():void
+      {
+        if (_dropObject != null)
+          _dropObject.fontColor = _fontColor;
+      }
+
+      public virtual function Bold():void
+      {
+      }
+
+      public virtual function CheckAnswer():void
+      {
+      }
+
+      public virtual function ShowAnswer():void
+      {
+      }
+
+      public virtual function Continue():void
+      {
+      }
+
+      public virtual function IsComplete():Boolean
+      {
+        return false;
+      }
+
+      public virtual function Disable():void
+      {
+      }
+
+      public virtual function Enable():void
+      {
+      }
+
+      public virtual function GetText():String
+      {
+        if (_dropObject != null)
+          return _dropObject.GetText();
+
+        return "";
+      }
+
+      public virtual function DropObject(object:DragAnswerControl):void
+      {
+        _showBorder = false;
+        _isShadowDragObject = object.shadowFilter;
+        object.shadowFilter = false;
+        object.currentParentObject = this;
+        object.isDroped = true;
+        _dropObject = object;
+       
+        for each (var item:UIComponent in boxAnswer.getChildren())
+          if (item is DragAnswerControl)
+            (item as DragAnswerControl).mainParentObject.DropObject(item as DragAnswerControl); 
+
+        boxAnswer.addChild(object);
+        if (this.width < object.width) 
+            this.width = object.width;
+        //Помечаем о том что сменилось сотояние потомучто при запуске как модуль почемуто состояниек не смнялось
+        //поэтому мы его еще раз присваиваем в updateComplete
+        _statedroppedAnswerActive = true;
+        currentState = state_droppedAnswer;
+        glow.end();
+        //Закоментировал потому, что если загружать как модуль то  width у boxAnswer равен 0
+       // BindingUtils.bindProperty(this, "width", boxAnswer, "width");
+      }
+
+      public virtual function RemoveDragObject(object:DragAnswerControl):void
+      {
+        _showBorder = true;
+        width = _defaultWidth;
+        object.shadowFilter = _isShadowDragObject;
+
+        _dropObject = null;
+        _statedroppedAnswerActive = false;
+        currentState = state_dropAnswer;
+      }
+
+      protected override function createChildren():void
+      {
+        super.createChildren();
+      }
+
+      public virtual function DefaultFont():void
+      {
+
+      }
+
+      /**
+      * Public members/properties
+      */
+      public function get isDrop():Boolean
+      {
+        if (_dropObject)
+          return true;
+        return false;
+      }
+
+      public function get dropObject():DragAnswerControl
+      {
+        return _dropObject;
+      }
+
+      public function set defaultWidth(value:int):void
+      {
+        _defaultWidth = value;
+      }
+      
+      public function get isCorrect():Boolean
+      {
+        return false;
+      }
+      
+      public function set fontName(name:String):void
+      {
+        this._fontName = name;
+        this._fontNameChanged = true;
+        invalidateProperties();
+      }
+  
+      public function set fontSize(size:int):void
+      {
+        this._fontSize = size;
+        this._fontSizeChanged = true;
+        invalidateProperties();
+      }
+      
+      public function set fontColor(color:int):void 
+      {
+        this._fontColor = color;
+        this._fontColorChanged = true;
+        invalidateProperties();
+      }
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Sequence target="{imgBackground}" effectEnd="EffectEnd_glowHandler(event)" id="glow">
+    <mx:Glow alphaFrom="0" alphaTo="1" color="0x88C4DE" duration="400" blurXFrom="0.0" blurXTo="5" blurYFrom="0.0" blurYTo="5"/>
+    <mx:Glow alphaFrom="1" alphaTo="0" color="0x88C4DE" duration="400" blurXFrom="5" blurXTo="0.0" blurYFrom="5" blurYTo="0.0"/>
+  </mx:Sequence>
+
+  <mx:states>
+    <mx:State name="{state_base}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:Image id="imgBackground" width="100%" height="100%"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_dropAnswer}" basedOn="{state_base}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:Label id="lb" text="drop answer here" width="100%" color="#969799" textAlign="center" fontSize="12"
+          verticalCenter="0"/>
+      </mx:AddChild>
+      <mx:SetProperty target="{glow}" name="target" value="{imgBackground}"/>
+    </mx:State>
+
+    <mx:State name="{state_droppedAnswer}" basedOn="{state_base}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all" >
+        <mx:Box x="0" y="0" id="boxAnswer" verticalAlign="middle" horizontalAlign="center" height="100%" 
+          minWidth="{_defaultWidth}" verticalScrollPolicy="off" horizontalScrollPolicy="off" borderStyle="none"/>
+      </mx:AddChild>
+      <mx:SetProperty target="{glow}" name="target" value="{boxAnswer}"/>
+      <mx:RemoveChild target="{lb}"/>
+    </mx:State>
+    
+    <mx:State name="{state_moveAnswer}" basedOn="{state_droppedAnswer}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all" target="{lb}" />
+      <mx:SetProperty target="{boxAnswer}"  name="visible" value="false" /> 
+      <mx:SetProperty target="{boxAnswer}"  name="width" value="0" />  
+      <mx:SetProperty target="{boxAnswer}"  name="height" value="0" /> 
+      <mx:SetProperty target="{glow}" name="target" value="{this}"/> 
+    </mx:State>
+    
+  </mx:states>
+
+</mx:Canvas>

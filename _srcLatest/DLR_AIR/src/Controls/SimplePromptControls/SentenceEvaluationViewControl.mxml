@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_edit}" xmlns:ns1="Controls.FlowBox.*" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="{ActivityControl.MAX_WIDTH - 50}"
+  xmlns:controls="Controls.Enviroment.*">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IFontStyle;
+      import interfaces.IBasePrompt;
+      import Controls.FlowBox.FlowBox;
+      import Model.EnumRegExp;
+      import Model.Prompts.SentenceEvaluation;
+      import Model.Prompts.Prompt;
+      import Controls.ActivityControl;
+      import Model.FactoryRegExp;
+      import mx.events.FlexEvent;
+      import Controls.SelectableLabel;
+      import Model.EmbededData;
+      import Model.Answers.SentenceEvaluationAnswer;
+      import Model.Answers.Answer;
+
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\SentenceEvaluationViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for Sentence Evaluation answer prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   30-December-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _prompt:SentenceEvaluation;
+      [Bindable]
+      private var _fntSize:int;
+    
+      private var _labels:Array = [];    // будет представлятся в виде МАТРИЦЫ!!!!!!!1
+                                         // таки образом будем знать какое слово в какой строке стоит
+
+      private const state_edit:String = "state_edit";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_correct:String = "state_correct";
+      private const state_continue:String = "state_continue";
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+
+      /**
+      * Private methods
+      */
+      
+      //Метод соберает текст такой же как исходный но торлько сидатой выделяем слова не которые должны быть выделены
+      //а которые выделел пользователь 
+      //На вход передаем масив строк со словами
+      private function CreateTextWithUserWordChenge(labels:Array):String
+      {
+        var resultString:String = "";
+        for each (var arr:Array in labels)
+        {
+          for each (var item:SelectableLabel in arr)
+          {
+            //если слово выделено пользователем вставляем сепаратор
+            if (item.isSelected)
+                resultString += " " + Prompt.separator;
+            else     
+                resultString += " " + item.text; 
+           }
+           //Вставляем перенос сроки между предложениями
+           resultString += "\n";
+        }   
+         return resultString;
+      }
+    
+    //Метод выделяет слова из строки которую получаем от пользователя  
+     private function ChengeWordsWithUserAnswerText(labels:Array):void
+     {
+       for (var i:int = 0; i < labels.length; i++)
+       {
+         for (var y:int = 0; y < labels[i].length; y++)
+         {
+            //если слово выделено пользователем 
+            if ((labels[i][y] as String).search(Prompt.separatorPatternString) != -1)
+                (_labels[i][y] as SelectableLabel).select = true; 
+         }   
+       }
+     }
+     
+     private function CreateLabelsArray(string:String):Array
+     {
+        var resultArray:Array = new Array();
+        // Разбиваем предложение на строки(\n)
+        
+        var strings:Array = string.split("\n");
+        var selectableLabel:SelectableLabel;
+        var indexAnswer:int = 0;              // текущий индекс ответа
+     
+        for each (var str:String in strings)
+        {
+          if (str == "" || str == " ")
+              break;
+          str = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.U_start(EnumRegExp.G), FactoryRegExp.instance.U_finish(EnumRegExp.G),
+                                                                FactoryRegExp.U_START, FactoryRegExp.U_FINISH, str);
+          str = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.B_start(EnumRegExp.G), FactoryRegExp.instance.B_finish(EnumRegExp.G),
+                                                                FactoryRegExp.B_START, FactoryRegExp.B_FINISH, str);
+          //Удаляем пробелы в начале сроки и в конце
+          str = FactoryRegExp.trim(str);                                                                
+          // Оставляем по одному пробелу межу словами
+          str  = str.replace(FactoryRegExp.instance.DeleteSpaces(EnumRegExp.G),' ');
+          var words:Array = str.split(" ");
+          resultArray.push(new Array());
+
+          // каждое слово ложим во FlowBox
+          for each (var word:String in words)
+            resultArray[resultArray.length - 1].push(word);
+        }
+       return resultArray;
+     }
+      
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        for each (var arr:Array in _labels)
+          for each (var item:IFontStyle in arr)
+            item.fontName = _fontName;
+
+        txtIncorrect.setStyle("fontFamily", _fontName);
+        txtCorrect.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        _fntSize = _fontSize;
+         for each (var arr:Array in _labels)
+          for each (var item:IFontStyle in arr)
+            item.fontSize = _fontSize;
+        
+        txtIncorrect.setStyle("fontSize", _fontSize);
+        txtCorrect.setStyle("fontSize", _fontSize);
+      }
+
+      public override function FontColor():void
+      {
+         for each (var arr:Array in _labels)
+          for each (var item:IFontStyle in arr)
+            item.fontColor = _fontColor;
+
+        txtIncorrect.setStyle("color", _fontColor);
+        txtCorrect.setStyle("color", "color");
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function Continue():void
+      {
+        currentState = state_continue;
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+             return true; 
+        for each (var arr:Array in _labels)
+          for each (var item:SelectableLabel in arr)
+            if (item.isSelected)
+              return true;
+
+        return false;
+      }
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        _prompt = prompt as SentenceEvaluation;
+
+        // Разбиваем предложение на строки(\n)
+        var strings:Array = _prompt.text.split("\n");
+
+        var selectableLabel:SelectableLabel;
+        var indexAnswer:int = 0;              // текущий индекс ответа
+        var selected:Boolean;                 // признак того, что должно ли быть выделеным слово
+
+
+
+        // для каждой строки создаем FlowBox и будем ложить его в vBoxContent
+        for each (var str:String in strings)
+        {
+          var flowBox:FlowBox = new FlowBox();
+          flowBox.setStyle("horizontalGap", 0);
+          flowBox.setStyle("verticalGap", 0);
+          flowBox.width = vBoxContent.width;
+
+
+          str = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.U_start(EnumRegExp.G), FactoryRegExp.instance.U_finish(EnumRegExp.G),
+                                                                FactoryRegExp.U_START, FactoryRegExp.U_FINISH, str);
+          str = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.B_start(EnumRegExp.G), FactoryRegExp.instance.B_finish(EnumRegExp.G),
+                                                                FactoryRegExp.B_START, FactoryRegExp.B_FINISH, str);
+
+          // Оставляем по одному пробелу межу словами
+          str  = str.replace(FactoryRegExp.instance.DeleteSpaces(EnumRegExp.G),' ');
+          var words:Array = str.split(" ");
+          _labels.push(new Array());
+
+          // каждое слово ложим во FlowBox
+          for each (var word:String in words)
+          {
+            selected = false;
+
+            // если слово содержит <![CDATA[<WOL>]] вместо этого вставляем соответствующий ответ
+            // и указываем что это слово должно быть выделенным (является правильным ответом)
+            if (word.indexOf(Prompt.separator) != -1)
+            {
+              word = word.replace(new RegExp(Prompt.separatorPatternString, "i"),
+                _prompt.ChildAnswers()[indexAnswer++].text);
+              selected = true;
+            }
+
+            selectableLabel = new SelectableLabel(0x0, EmbededData.inctance.iconCorrectColor, word, selected);
+            flowBox.addChild(selectableLabel);
+            _labels[_labels.length - 1].push(selectableLabel);
+          }
+
+          vBoxContent.addChild(flowBox);
+        }
+      }
+
+      public override function GetText():String
+      {
+        var result:String = "";
+        for each (var arr:Array in _labels)
+          for each (var item:SelectableLabel in arr)
+          {
+            item.fontName = name;
+            if (item.isSelected)
+            {
+              if (item.mustSelected)
+                result += item.centerString + " ";
+              else
+                result += " ";
+            }
+          }
+
+        result = result.slice(0, result.length - 1);  // удаляем последний пробел
+
+        return result;
+      }
+
+      public override function SetIncorrect():void
+      {
+        currentState = state_incorrect;
+        txtIncorrect.htmlText = "";
+        var color:String;
+
+        for each (var arr:Array in _labels)
+        {
+          for each (var item:SelectableLabel in arr)
+          {
+            //
+            if (item.mustSelected && item.select)
+              color = EmbededData.inctance.iconIncorrectColorHex;
+            else if (!item.mustSelected && item.select)
+              color = EmbededData.inctance.iconIncorrectColorHex;
+            else
+              color = SelectableLabel.IntToHex(_fontColor);
+            if (item.isUnderline == true)
+                txtIncorrect.htmlText += "<u>" + item.ToString + "<font color='#" + color + "'>" + item.centerString + "</u></font>" +
+                    item.AfterString + "</u> ";
+            else
+                 txtIncorrect.htmlText += item.ToString + "<font color='#" + color + "'>" + item.centerString + "</font>" +
+                    item.AfterString + " ";
+          }
+           //Объеденяем теги U чтобы
+          txtIncorrect.htmlText = txtIncorrect.htmlText.replace(new RegExp("<\\s*?/\\s*?[uU]\\s*?>(\\s*?)<\\s*?[uU]\\s*>","g"),"$1");
+
+          txtIncorrect.htmlText += "\n";
+        }
+      }
+
+      public override function SetCorrect():void
+      {
+        if (currentState != state_incorrect)
+          stCorrect.basedOn = "state_answers";
+
+        currentState = state_correct;
+        txtCorrect.htmlText = "";
+        var color:String;
+
+        for each (var arr:Array in _labels)
+        {
+          for each (var item:SelectableLabel in arr)
+          {
+            if (item.mustSelected)
+              color = EmbededData.inctance.iconCorrectColorHex;
+            else
+              color = SelectableLabel.IntToHex(_fontColor);
+
+            if (item.isUnderline == true)
+                txtCorrect.htmlText += "<u>" + item.ToString + "<font color='#" + color + "'>" + item.centerString + "</font>" +
+                           item.AfterString + "</u> ";
+            else
+                txtCorrect.htmlText += item.ToString + "<font color='#" + color + "'>" + item.centerString + "</font>" +
+                         item.AfterString + " ";
+          }
+          //Объеденяем теги U чтобы
+          txtCorrect.htmlText = txtCorrect.htmlText.replace(new RegExp("<\\s*?/\\s*?[uU]\\s*?>(\\s*?)<\\s*?[uU]\\s*>","g"),"$1");
+          txtCorrect.htmlText += "\n";
+        }
+      }
+
+      public override function DefaultFont():void
+      {
+        for each (var arr:Array in _labels)
+          for each (var item:IFontStyle in arr)
+            item.DefaultFont()
+
+        txtIncorrect.setStyle("fontFamily", "Futura");
+        txtCorrect.setStyle("fontFamily", "Futura");
+      }
+
+
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._prompt.result = CreateTextWithUserWordChenge(_labels);
+      }
+      
+       //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (needCheckAnswer == false)
+            _isDeserialize = true;
+        ChengeWordsWithUserAnswerText( CreateLabelsArray(this._prompt.result));
+        //ChengeWordsWithUserAnswerText()
+      }
+      
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+    ]]>
+  </mx:Script>
+
+  <transitions>
+    <mx:Transition fromState="{state_incorrect}" toState="{state_correct}">
+      <mx:Parallel id="showPromptEffect" target="{hBoxCorrect}">
+        <mx:Resize duration="300" heightFrom="0" id="showResizeEffect"/>
+        <mx:Sequence>
+          <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0"/>
+          <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1"/>
+        </mx:Sequence>
+      </mx:Parallel>
+    </mx:Transition>
+  </transitions>
+
+  <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:VBox id="vBoxContent" width="{ActivityControl.MAX_WIDTH - 80}" horizontalScrollPolicy="off"
+            verticalScrollPolicy="off" verticalGap="0"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="state_answers">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:VBox id="vBoxAnswers" maxWidth="{ActivityControl.MAX_WIDTH - 80}" verticalScrollPolicy="off" horizontalScrollPolicy="off"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}" basedOn="state_answers">
+      <mx:AddChild relativeTo="{vBoxAnswers}" creationPolicy="all">
+        <mx:HBox id="hBoxIncorrect" width="{this.width - 40}" verticalScrollPolicy="off" horizontalScrollPolicy="off" verticalAlign="middle">
+          <mx:Image id="imgIncorrect" width="{_fntSize}" height="{_fntSize}" source="{EmbededData.inctance.iconIncorrect}"/>
+          <controls:TextExended id="txtIncorrect" width="100%" selectable="false" />
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}" basedOn="state_incorrect" id="stCorrect">
+      <mx:AddChild relativeTo="{vBoxAnswers}" creationPolicy="all">
+        <mx:HBox id="hBoxCorrect" width="{this.width - 40}" verticalScrollPolicy="off" horizontalScrollPolicy="off" verticalAlign="middle">
+          <mx:Image id="imgCorrect" width="{_fntSize}" height="{_fntSize}" source="{EmbededData.inctance.iconCorrect}" />
+          <controls:TextExended id="txtCorrect" width="100%" selectable="false" />
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_continue}" basedOn="{state_correct}">
+      <mx:RemoveChild target="{hBoxIncorrect}"/>
+    </mx:State>
+  </states>
+
+</BaseUIControl>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:LinkButton xmlns:mx="http://www.adobe.com/2006/mxml" click="ClickHandler(event)" label="Begin">
+  <mx:Script>
+    <![CDATA[
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\ItemRenderers\LessonHistoryLinkButton.mxml
+      *
+      *  Abstract:
+      *     This is item renderer control for data grid Lesson History
+      *     
+      *  Author:
+      *     Evgenij Welikij    29-November-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+          
+          
+      /**
+      * Static
+      */
+      
+      
+      /**
+      * Private members/properties
+      */
+      
+      
+      /**
+      * Private methods
+      */
+      
+      
+      /**
+      * Events handler
+      */
+      private function ClickHandler(event:MouseEvent):void
+      {
+        data.begin.callBack(data.begin.activity);
+      }
+      
+      
+      /** 
+      * Initialization
+      */
+          
+          
+      /**
+      * Constructor 
+      */
+      
+      
+      /**
+      * Virtuals methods
+      */
+      
+      
+      /**
+      * Public members/properties
+      */
+      
+      
+      /**
+      * Public methods
+      */
+      
+      
+    ]]>
+  </mx:Script>
+</mx:LinkButton>

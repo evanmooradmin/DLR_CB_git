@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" backgroundColor="#FFFFFF" paddingTop="50" paddingBottom="50" paddingLeft="50" xmlns:ns1="Controls.Printing.*">
+
+  <mx:Script>
+    <![CDATA[
+      
+      [Bindable]
+      public var pageNumber:Number = 1;
+      [Bindable]
+      public var prodTotal:Number = 0;
+
+      public function showPage(pageType:String):void 
+      {
+        if(pageType == "first" || pageType == "middle") 
+        {
+          footer.includeInLayout=false;
+          footer.visible = false;
+        }
+        if(pageType == "middle" || pageType == "last") 
+        {
+          header.includeInLayout=false;
+          header.visible = false;
+        }
+        if(pageType == "last") 
+        {
+          footer.includeInLayout=true;
+          footer.visible = true;
+        }
+        
+        validateNow();
+      }  
+           
+    ]]>
+  </mx:Script>
+  <mx:VBox width="80%" horizontalAlign="left">
+    <mx:Label text="Page {pageNumber}"/>
+  </mx:VBox>
+  
+  <ns1:FormPrintHeader id="header" width="100%"/>
+  
+  <mx:PrintDataGrid id="myDataGrid" width="100%" height="100%">
+    <mx:columns>
+      <mx:DataGridColumn headerText="Unit" dataField="name"/>
+      <mx:DataGridColumn headerText="Activity" dataField="title"/>
+      <mx:DataGridColumn headerText="Date Completed" dataField="date"/>
+    </mx:columns>
+  </mx:PrintDataGrid>
+  
+  <ns1:FormPrintFooter id="footer" pTotal="{prodTotal}"/>
+</mx:VBox>

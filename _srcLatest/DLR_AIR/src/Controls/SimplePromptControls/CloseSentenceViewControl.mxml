@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*"  xmlns:mx="http://www.adobe.com/2006/mxml" implements="interfaces.IFontStyle, interfaces.IResult"
+  xmlns:ns="Controls.FlowBox.*"  creationComplete="creationCompleteHandler(event)" verticalScrollPolicy="off" horizontalScrollPolicy="off" xmlns:Enviroment="Controls.Enviroment.*">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+    	import mx.controls.Text;
+      import Controls.QuizControl;
+      import flash.sampler.NewObjectSample;
+      import flash.text.engine.BreakOpportunity;
+      import Model.EnumRegExp;
+      import Model.FactoryRegExp;
+      import mx.events.FlexEvent;
+      import __AS3__.vec.Vector;
+      import Model.EmbededData;
+      import mx.controls.TextInput;
+      import mx.core.UIComponent;
+      import Controls.ActivityControl;
+      import Controls.PromptControls.ActivityDirectionsControl;
+      import Model.Prompts.ActivityDirections;
+      import mx.controls.Label;
+      import Model.Prompts.CloseSentence;
+      import Model.Prompts.Prompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\CloseSentenceViewControl.mxml
+      *
+      *  Abstract:
+      *     This is visual control for close sentences prompt
+      *
+      *  Author:
+      *     Evgenij Welikij   06-March-2010
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static const state_correct:String = "state_correct";
+      public static const state_incorrect:String = "state_incorrect";
+      public static const state_incorrectCorrect:String = "state_icorrectCorrect";
+
+
+      /**
+      * Private members/properties
+      */
+      private var _prompt:CloseSentence;
+
+      private var _txtInputs:Array = [];
+      private var _wordsArray:Array = [];
+
+      private var _fontFamily:String = "EMComic";
+      private var _isDefaultFont:Boolean = false;
+      
+      [Bindable]
+      private var _fntSize:int = 0;
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+
+      /**
+      * Private methods
+      */
+      protected function Update():void
+       {
+          fontName =_fontName;
+          fontSize = _fontSize;
+          fontColor = _fontColor;
+       }
+
+      /**
+      * Events handler
+      */
+      private function UpdateComplete_controlHandler(event:FlexEvent):void
+      {
+        // делаем label ровно по длинне текста
+        var label:Label = event.currentTarget as Text;
+        var lineMetrics:TextLineMetrics = label.measureText(label.text);
+
+         // label.width = lineMetrics.width + lineMetrics.x * 2;
+      }
+
+
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+        // устанавливаем длинну данного контрола
+        var point:Point = new Point();
+        point = localToGlobal(point);
+        point = QuizControl.instance.globalToLocal(point);
+        flowBox.width = this.width = ActivityControl.MAX_WIDTH - point.x - 20;
+        Update(); 
+       }
+
+      private function txtInputMaxWidth():void
+      {
+        var index:int = 0;
+
+        for each (var txtInput:UIComponent in flowBox.getChildren())
+        {
+           if (txtInput is TextInput)
+           {
+              (txtInput as TextInput).setStyle("fontFamily", this._fontFamily);
+               txtInput.setStyle("fontSize", this._fontSize);
+
+              var lineMetrics:TextLineMetrics = txtInput.measureText( _prompt.answers[index]);
+              txtInput.width = lineMetrics.width + lineMetrics.x * 4;
+              if (txtInput.width < 50)
+                    txtInput.width = 100;
+              index++;
+           }
+           else if (txtInput is Text)
+           {
+              (txtInput as Text).setStyle("fontFamily", this._fontFamily);
+              txtInput.setStyle("fontSize", this._fontSize);
+              lineMetrics = (txtInput as Text).measureText((txtInput as Text).text);
+
+              if ((txtInput as Text).text == " ")
+                  txtInput.width = lineMetrics.width - lineMetrics.width/3;
+           }
+        }
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+  
+      
+      public override function FontName():void
+      {
+        _isDefaultFont = false;
+       // flowBox.setStyle("fontFamily", name);
+        txtTextIncorrect.setStyle("fontFamily", _fontName);
+        txtTextCorrect.setStyle("fontFamily", _fontName);
+
+        this.txtInputMaxWidth();
+      }
+
+      public override function FontSize():void
+      {
+        txtTextIncorrect.setStyle("fontSize", _fontSize);
+        txtTextCorrect.setStyle("fontSize", _fontSize);
+
+        this.txtInputMaxWidth();
+      }
+
+      public override function FontColor():void
+      {
+       // flowBox.setStyle("color", color);
+        txtTextIncorrect.setStyle("color", _fontColor);
+        txtTextCorrect.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (ActivityControl.isCheckAnswer == false)
+          return true;
+
+        for each (var item:TextInput in _txtInputs)
+          if (FactoryRegExp.trim(item.text) == "")
+            return false;
+
+        return true;
+      }
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        _prompt = prompt as CloseSentence;
+
+        var separatorPattern:RegExp = new RegExp(Prompt.separatorPatternString, "g");
+
+        var textTemp:String = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.U_start(EnumRegExp.G), FactoryRegExp.instance.U_finish(EnumRegExp.G),
+                                                                FactoryRegExp.U_START, FactoryRegExp.U_FINISH, _prompt.text);
+        textTemp = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.B_start(EnumRegExp.G), FactoryRegExp.instance.B_finish(EnumRegExp.G),
+                                                                FactoryRegExp.B_START, FactoryRegExp.B_FINISH, textTemp);
+
+          //добовляем по два пробела между словами
+          textTemp = textTemp.replace(new RegExp("\\s",'g'),"  ");
+          //добовляем пробел между сепаратором и словом спереди
+          textTemp = textTemp.replace(new RegExp("(\\S)("+Prompt.separatorPatternString+")",'g'),"$1 $2");
+          //добовляем пробел между сепаратором и словом с сзадиреди
+          textTemp = textTemp.replace(new RegExp("("+Prompt.separatorPatternString+")(\\S)",'g'),"$1 $2");
+
+          var words:Array = textTemp.split(" ");
+          var text:Text = null;
+
+          for each (var word:String in words)
+          {
+            text = new Text();
+            text.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_controlHandler);
+            text.selectable = false;
+
+            if (word == "" || word == " ")
+            {
+               text.text += " ";
+               //text.text = " ";
+               flowBox.addChild(text);
+            }
+            else if (word == Prompt.separator)
+            {
+               var txtInput:TextInput = new TextInput();
+               _txtInputs.push(txtInput);
+               flowBox.addChild(txtInput);
+            }
+            else
+            {
+               text.text = word == "" ? " " : word;
+               flowBox.addChild(text);
+            }
+          }
+        }
+
+
+      public override function GetText():String
+      {
+        return ""
+      }
+
+      public override function Continue():void
+      {
+        currentState = state_correct;
+      }
+
+      public override function SetIncorrect():void
+      {
+
+        currentState = state_incorrect;
+        var index:int = 0;
+
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+          if (item is Text)
+            txtTextIncorrect.htmlText += (item as Text).text;
+          else if (item is TextInput)
+          {
+            var tempAnswer:String = (item as TextInput).text;
+            var color:String = "";
+
+            if (tempAnswer != _prompt.answers[index])
+              color = EmbededData.inctance.iconIncorrectColorHex;
+            else
+              color = EmbededData.inctance.iconCorrectColorHex;
+
+            index++;
+
+            tempAnswer = '<font color="#' + color + '">' + tempAnswer + "</font>"
+            txtTextIncorrect.htmlText += tempAnswer;
+          }
+        }
+        //Оставляем по одному пробелу между словами
+        txtTextIncorrect.htmlText = txtTextIncorrect.htmlText.replace(FactoryRegExp.instance.DeleteSpaces(EnumRegExp.G),' ');
+        txtTextIncorrect.htmlText = txtTextIncorrect.htmlText.replace(new RegExp("SIZE\\s*?=\\s*?\"[0-9]+\"",'g'),'');
+
+        if (QuizControl.instance.preferences.isCheckAnswer == false)
+            SetCorrect();
+      }
+
+      public override function SetCorrect():void
+      {
+         if (currentState == state_incorrect)
+             currentState = state_incorrectCorrect;
+        else
+             currentState = state_correct;
+
+
+        txtTextCorrect.htmlText = "";
+        var index:int = 0;
+
+
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+          if (item is Text)
+            txtTextCorrect.htmlText += (item as Text).text;
+          else if (item is TextInput)
+          {
+            txtTextCorrect.htmlText += '<font color="#' + EmbededData.inctance.iconCorrectColorHex + '">' +
+                _prompt.answers[index] + "</font>";
+            index++;
+          }
+        }
+        //Оставляем по одному пробелу между словами
+        txtTextCorrect.htmlText =  txtTextCorrect.htmlText.replace(FactoryRegExp.instance.DeleteSpaces(EnumRegExp.G),' ');
+        txtTextCorrect.htmlText = txtTextCorrect.htmlText.replace(new RegExp("SIZE\\s*?=\\s*?\"[0-9]+\"",'g'),'');
+      }
+
+      public override function DefaultFont():void
+      {
+      	_isDefaultFont = true;
+        txtTextIncorrect.setStyle("fontFamily", "EMComic");
+        txtTextCorrect.setStyle("fontFamily", "EMComic");
+
+        for each (var item:UIComponent in flowBox.getChildren())
+          item.setStyle("fontFamily", "EMComic");
+        _fontFamily =  "EMComic"; 
+        txtInputMaxWidth();   
+      }
+      
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        var textResult:String = "";
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+          if (item is TextInput)
+              textResult += Prompt.separator + (item as TextInput).text;  
+        }
+        textResult = textResult.replace(new RegExp(Prompt.separatorPatternString, ""),"")
+        this._prompt.result = textResult;
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (this._prompt.result != null)
+        {
+           var userAnswers:Array = (this._prompt.result as String).split(Prompt.separator);
+           userAnswers.reverse();
+           for (var i:int = 0; i < flowBox.getChildren().length; i++)
+           {
+             if (flowBox.getChildren()[i] is TextInput)
+                 (flowBox.getChildren()[i] as TextInput).text = userAnswers.pop();
+           } 
+        }
+        
+      }
+      
+      /**
+      * Public members/properties
+      */
+      public function get txtInputs():Array
+      {
+        return _txtInputs;
+      }
+
+   
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="baseImage">
+      <mx:RemoveChild target="{flowBox}"/>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}" basedOn="baseImage">
+      <mx:AddChild relativeTo="{vBox}" creationPolicy="all">
+        <mx:HBox id="hBoxIcorrect" verticalAlign="middle" width="100%" verticalScrollPolicy="off"  horizontalScrollPolicy="off">
+          <mx:Image id="imgIconIncorrect" width="{_fntSize}" height="{_fntSize}" source="{EmbededData.inctance.iconIncorrect}"/>
+          <Enviroment:TextExended id="txtTextIncorrect" selectable="false" width="100%"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrectCorrect}" basedOn="{state_incorrect}">
+      <mx:AddChild relativeTo="{vBox}" creationPolicy="all">
+        <mx:HBox verticalAlign="middle" width="100%" verticalScrollPolicy="off"  horizontalScrollPolicy="off">
+          <mx:Image id="imgIconCorrect" width="{_fntSize}" height="{_fntSize}" source="{EmbededData.inctance.iconCorrect}"/>
+          <Enviroment:TextExended id="txtTextCorrect" selectable="false" width="100%"/>
+        </mx:HBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}" basedOn="{state_incorrectCorrect}">
+      <mx:RemoveChild target="{hBoxIcorrect}"/>
+    </mx:State>
+  </states>
+
+  <mx:VBox id="vBox" verticalScrollPolicy="off"  horizontalScrollPolicy="off" width="100%">
+    <ns:FlowBox id="flowBox"  horizontalGap="0"  verticalScrollPolicy="off"  horizontalScrollPolicy="off"/>
+  </mx:VBox>
+
+</BaseUIControl>

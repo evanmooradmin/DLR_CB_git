@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="314" height="166"
+  backgroundImage="@Embed(source='style/images/AlertWindow/bkg.jpg')">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+      import mx.managers.CursorManager;
+
+      [Bindable]
+
+      private var HandIcon:Class = EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+      private var callBackYES:Function;
+      private var callBackNO:Function;
+
+      public static function Show(parent:UIComponent, headerText:String, alertText:String, _callBackYES:Function = null, _callBackNO:Function = null):YNWindow
+      {
+        var ynWindow:YNWindow = new YNWindow();
+
+        PopUpManager.addPopUp(ynWindow, parent, true);
+        PopUpManager.centerPopUp(ynWindow);
+
+        ynWindow.lbTitle.text = headerText;
+        ynWindow.txtContent.text = alertText;
+
+        ynWindow.CallBackYES = _callBackYES;
+        ynWindow.CallBackNO = _callBackNO;
+
+        return ynWindow;
+      }
+
+      private function RollOver(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function RollOut(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+      private function Click_btnYES(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+
+        if (callBackYES != null)
+          callBackYES();
+      }
+
+      private function Click_btnNO(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+
+        if (callBackNO != null)
+          callBackNO();
+      }
+
+      public function set CallBackYES(callBack:Function):void
+      {
+        this.callBackYES = callBack;
+      }
+
+      public function set CallBackNO(callBack:Function):void
+      {
+        this.callBackNO = callBack;
+      }
+    ]]>
+  </mx:Script>
+
+  <mx:Style source="style/style_DLR.css"/>
+
+  <mx:Label x="10" width="294" id="lbTitle" selectable="false" top="10"/>
+  <mx:Text width="294" id="txtContent" textAlign="center" selectable="false" verticalCenter="0" horizontalCenter="0"/>
+  <mx:Button y="128" label="Yes" id="btnYes" styleName="ButtonOKAlerWindow" rollOver="RollOver(event)" rollOut="RollOut(event)"
+    click="Click_btnYES(event)" horizontalCenter="59"/>
+  <mx:Button y="128" label="No" id="btnNO" styleName="ButtonOKAlerWindow" rollOver="RollOver(event)" rollOut="RollOut(event)"
+    click="Click_btnNO(event)" horizontalCenter="-60"/>
+
+</mx:Canvas>

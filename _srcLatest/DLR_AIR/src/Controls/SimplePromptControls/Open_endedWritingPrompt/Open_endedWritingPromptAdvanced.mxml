@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml"  implements="interfaces.IFontStyle,  interfaces.IResult"
+                currentState="{state_edit}" width="100%" verticalScrollPolicy="off"
+                horizontalScrollPolicy="off" xmlns:ns="Controls.FlowBox.*"
+                creationComplete="creationCompleteHandler(event)" >
+
+  <mx:Script>
+    <![CDATA[
+      import mx.events.EffectEvent;
+      import mx.effects.Move;
+      import Model.Events.VerticalScrollCreate;
+      import mx.events.ResizeEvent;
+      import Model.EnumRegExp;
+      import Controls.Enviroment.TextExended;
+      import Controls.SelectableLabel;
+      import Model.EmbededData;
+      import mx.core.UIComponent;
+      import mx.controls.Label;
+      import mx.controls.TextInput;
+      import __AS3__.vec.Vector;
+      import Model.FactoryRegExp;
+      import Model.Answers.VariantORAnswer;
+      import Model.Events.AnswerWillVaryViewControlEvent;
+      import Controls.QuizControl;
+      import Controls.SimplePromptControls.AnswerWillVaryViewControl;
+      import mx.managers.PopUpManager;
+      import Controls.Windows.AlertWindow;
+      import Model.Prompts.Open_endedWritingPrompt;
+      import Controls.ActivityControl;
+      import mx.events.FlexEvent;
+      import Model.Answers.Answer;
+      import Model.Prompts.Prompt;
+      import interfaces.IBasePrompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\Open_endedWritingPrompt\Open_endedWritingPromptControlAdvanced.mxml
+      *
+      *  Abstract:
+      *     This is advanced open-ended writing prompt control
+      *
+      *  Author:
+      *     Evgenij Welikij   22-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private const state_edit:String = "state_edit";
+      private const state_text:String = "state_text";
+      private const state_answers_will_vary:String = "state_answers_will_vary";
+
+      private var _answersWariant:Array = new Array();
+     
+
+  
+
+      private var answerWillWaryControl:AnswerWillVaryViewControl;
+      private var _txtInputs:Vector.<TextInput> = new Vector.<TextInput>();
+      private var stringForAnswerWillVaryViewControl:String;
+      private var _prompt:Prompt;
+
+
+
+      /**
+      * Private methods
+      */
+      private function buildStringForAnswerWillVaryViewControl():void
+      {
+        stringForAnswerWillVaryViewControl = "";
+
+        //Пробегаем по всем возможным ответам и сверяем их с текстом который ввел пользователь
+        for each (var item:Object in this._answersWariant)
+        {
+          if (item is VariantORAnswer)
+          {
+            //Сравниваем строки в нижнем регистре и с удалеными пробелами
+//            if(FactoryRegExp.NormalazeString((item as VariantORAnswer).text.toLowerCase()) != FactoryRegExp.NormalazeString(this._txtInputs[0].text.toString().toLowerCase()))
+              stringForAnswerWillVaryViewControl += (item as VariantORAnswer).text +', ';
+          }
+        }
+      }
+      
+
+      /**
+      * Events handler
+      */
+      
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+        removeEventListener(FlexEvent.CREATION_COMPLETE, creationCompleteHandler);
+        var delegate:Function = function():void 
+        { 
+          trace("[handler]"); 
+          _customInvalidateSize = true; 
+          invalidateSize(); 
+          invalidateDisplayList();
+        };
+        ActivityControl.instance.addEventListener("customInvalidateSize", delegate);
+      }
+      private function Clik_btnShowHandler(event:MouseEvent):void
+      {
+        var component:Open_endedWritingPromptAdvanced = this;
+        var move:Move = new Move();
+        move.xTo = vBox.width - btnShow.width - 2;
+        move.addEventListener(EffectEvent.EFFECT_END, 
+        function(event:Event):void
+        {
+          component.btnShow.visible = false;
+          stringForAnswerWillVaryViewControl = stringForAnswerWillVaryViewControl.replace(new RegExp(',\\s*?$', 'g'), '');
+          var position:Point = vBox.localToGlobal(new Point());
+          var t:Point = btnShow.localToGlobal(new Point());
+          t = ActivityControl.instance.globalToLocal(t);
+          var leftToRight:Boolean = t.x < ActivityControl.MAX_WIDTH / 2;
+          var diffWidth:Number = leftToRight ? -btnShow.x : (btnShow.x + btnShow.width) - vBox.width;
+          answerWillWaryControl = AnswerWillVaryViewControl.Show(component, stringForAnswerWillVaryViewControl, position, _fontName, _fontSize, _fontColor, diffWidth, leftToRight);
+          QuizControl.instance.hideCanvas.visible = true;
+          answerWillWaryControl.addEventListener(AnswerWillVaryViewControlEvent.ANSWER_WILL_VARY_EVENT, WillVaryEventHandler);
+        });
+        move.play([btnShow]);
+      }
+
+
+//      private function rotateButton():void
+//      {
+//        var offsetWidth:Number = btnShow.width / 2;
+//        var offsetHeight:Number = btnShow.height / 2;
+//        var tempMatrix:Matrix = btnShow.transform.matrix;
+//        tempMatrix.translate(-offsetWidth, -offsetHeight);
+//        tempMatrix.rotate(Math.PI);
+//        tempMatrix.translate(+offsetWidth, +offsetHeight);
+//
+//        btnShow.transform.matrix = tempMatrix;
+//      }
+
+      private function WillVaryEventHandler(event:AnswerWillVaryViewControlEvent):void
+      {
+        answerWillWaryControl.removeEventListener(AnswerWillVaryViewControlEvent.ANSWER_WILL_VARY_EVENT, WillVaryEventHandler);
+        QuizControl.instance.hideCanvas.visible = false;
+        
+        var move:Move = new Move();
+        move.xFrom = vBox.width - btnShow.width - 2;
+        move.xTo = txtFull.width + 6;
+        this.btnShow.visible = true;
+        move.play([btnShow]);
+      }
+
+
+      private function UpdateComplete_controlHandler(event:FlexEvent):void
+      {
+        // делаем label ровно по длинне текста
+        var label:Text = event.currentTarget as Text;
+        var lineMetrics:TextLineMetrics = label.measureText(label.text);
+        var whiteSpase:Boolean = (label.text == " " || label.text == "");
+        label.width = lineMetrics.width + (whiteSpase ? 0 : lineMetrics.x * 3);
+      }
+
+      private function UpdateComplete_txtInputHandler(event:FlexEvent):void
+      {
+        var txtInput:TextInput = event.currentTarget as TextInput;
+        txtInput.width = txtInput.measureText("123456789012345").width;  // width = 15 symbols
+      }
+
+      private function enterState_stateAnswersWillVaryHandler(event:FlexEvent):void
+      {
+        if (stringForAnswerWillVaryViewControl == "")
+          currentState = state_text;
+      }
+      
+      private function btnShow_updateCompleteHandler(event:Event):void
+      {
+//        var t:Point = btnShow.localToGlobal(new Point());
+//        t = ActivityControl.instance.globalToLocal(t);
+//        var leftToRight:Boolean = t.x < ActivityControl.MAX_WIDTH / 2;
+//        if(leftToRight && btnShow.styleName != "ButtonHideDefinitionRight")
+//          btnShow.styleName = "ButtonHideDefinitionRight";
+//        else if(!leftToRight && btnShow.styleName != "ButtonHideDefinition")
+//          btnShow.styleName = "ButtonHideDefinition";
+      }
+      
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      
+      private var _customInvalidateSize:Boolean;
+      protected override function commitProperties():void
+      {
+          if (_fontNameChanged)
+              FontName();
+          if (_fontSizeChanged)
+              FontSize();
+          if (_fontColorChanged)
+              FontColor();
+              
+          _fontNameChanged = false;
+          _fontSizeChanged = false;  
+          _fontColorChanged = false;
+       
+          super.commitProperties(); 
+       }
+      
+      
+      
+      protected override function measure():void
+      {
+        super.measure();
+//        if(_customInvalidateSize)
+//        {
+//          
+//          _customInvalidateSize = false;
+//        }
+        width = ActivityControl.instance.calculateChildWidth(this);
+      }
+      
+      public override function FontName():void
+      {
+        flowBox.setStyle("fontFamily", _fontName);
+        txtFull.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        flowBox.setStyle("fontSize", _fontSize);
+        txtFull.setStyle("fontSize", _fontSize);
+      }
+
+      public override function FontColor():void
+      {
+        flowBox.setStyle("color", _fontColor);
+        txtFull.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (ActivityControl.isCheckAnswer == false)
+          return true;
+
+        for each (var item:TextInput in _txtInputs)
+          if (FactoryRegExp.trim(item.text) == "")
+            return false;
+        return true;
+      }
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        this._prompt = prompt as Prompt;
+
+        var separatorPattern:RegExp = new RegExp(Prompt.separatorPatternString, "g");
+
+        var textTemp:String = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.U_start(EnumRegExp.G), FactoryRegExp.instance.U_finish(EnumRegExp.G),
+                                                                FactoryRegExp.U_START, FactoryRegExp.U_FINISH, _prompt.text);
+        textTemp = FactoryRegExp.AddTagToEachWord(FactoryRegExp.instance.B_start(EnumRegExp.G), FactoryRegExp.instance.B_finish(EnumRegExp.G),
+                                                                FactoryRegExp.B_START, FactoryRegExp.B_FINISH, textTemp);
+
+          //добовляем по два пробела между словами
+          textTemp = textTemp.replace(new RegExp("\\s",'g'),"  ");
+          //добовляем пробел между сепаратором и словом спереди
+          textTemp = textTemp.replace(new RegExp("(\\S)("+Prompt.separatorPatternString+")",'g'),"$1 $2");
+          //добовляем пробел между сепаратором и словом с сзадиреди
+          textTemp = textTemp.replace(new RegExp("("+Prompt.separatorPatternString+")(\\S)",'g'),"$1 $2");
+
+          var words:Array = textTemp.split(" ");
+          var text:TextExended = null;
+
+          for each (var word:String in words)
+          {
+            text = new TextExended();
+            //Подписываем на событие что бы менять размер элементов
+            text.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_controlHandler);
+            text.selectable = false;
+
+            if (word == "" || word == " ")
+            {
+               text.HtmlText += "";
+               flowBox.addChild(text);
+            }
+            else if (word == Prompt.separator)
+            {
+              var txtInput:TextInput = new TextInput();
+              
+              // ESafonov: в этих промптах вводятся названия фильмов и тп, поэтому курсив (может как в xml вынести) 
+              if(isNeedItalicFont(_prompt.ID))
+                txtInput.setStyle("fontStyle", "italic");
+                
+               //Подписываем на событие что бы менять размер элементов
+              txtInput.addEventListener(FlexEvent.UPDATE_COMPLETE, UpdateComplete_txtInputHandler);
+              _txtInputs.push(txtInput);
+              flowBox.addChild(txtInput);
+            }
+            else
+            {
+               text.HtmlText = word == "" ? " " : word;
+               flowBox.addChild(text);
+            }
+          }
+        if ((prompt as Open_endedWritingPrompt).variantOrAnswerContainer != null)
+             this._answersWariant = (prompt as Open_endedWritingPrompt).variantOrAnswerContainer.ChildAnswers();
+      }
+
+      public override function GetText():String
+      {
+        return txtFull.text;
+      }
+      
+      private function isNeedItalicFont(promptID:int):Boolean
+      {
+        return promptID == 1665 || promptID == 1667 || promptID == 1669;
+      }
+      
+      public override function Continue():void
+      {
+        buildStringForAnswerWillVaryViewControl();
+
+        txtFull.htmlText = "";
+
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+          if (item is TextExended)
+              txtFull.htmlText += (item as TextExended).HtmlText;
+
+          else if (item is TextInput)
+          {
+            var text:String = (item as TextInput).text;
+            // ESafonov: в этих промптах вводятся названия фильмов и тп, поэтому курсив (может как в xml вынести) 
+            if(isNeedItalicFont(_prompt.ID))
+              text = "<i>" + text + "</i>";
+            //выделяем введенный пользователем текст зеленным цветом
+            txtFull.htmlText +=  '<font color="#' + SelectableLabel.IntToHex(EmbededData.inctance.iconCorrectColor.toString()) + '">'+ text + '</font>';
+          }
+        }
+        //оОбъеденяем теги u что бы сохранить пробелы между словами
+        txtFull.htmlText = txtFull.htmlText.replace(new RegExp('(<\\s*?/u\\s*?>)(\\s+?)(<\\s*?u\\s*?>)','g'),'$2');
+        txtFull.htmlText =  FactoryRegExp.NormalazeString(txtFull.htmlText);
+
+        currentState = _answersWariant.length == 0 ? state_text : state_answers_will_vary;
+      }
+
+      public override function SetCorrect():void
+      {
+      }
+
+      public override function SetIncorrect():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+        flowBox.setStyle("fontFamily", "Futura");
+        txtFull.setStyle("fontFamily", "Futura");
+      }
+
+      
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        var resultText:String = "";
+        for each (var item:UIComponent in flowBox.getChildren())
+        {
+            if (item is TextInput)
+                resultText += Prompt.separator + (item as TextInput).text;
+        }
+        //Вырезаем первый ненужный разделитель
+        resultText = resultText.replace(new RegExp(Prompt.separatorPatternString,""),"");
+        this._prompt.result = resultText; 
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (this._prompt.result != null)
+        {
+           var resultWords:Array = (this._prompt.result as String).split(Prompt.separator);
+           for (var i:int=0; i < resultWords.length; i++)
+                (this._txtInputs[i] as TextInput).text = resultWords[i];
+        }        
+      }
+      
+      
+      
+      /**
+      * Public members/properties
+      */
+
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{vBox}" creationPolicy="all">
+        <ns:FlowBox id="flowBox" width="{ActivityControl.MAX_WIDTH - 50}" horizontalGap="0"  verticalScrollPolicy="off" horizontalScrollPolicy="off" verticalAlign="middle" paddingLeft="1" paddingTop="1"  />
+      </mx:AddChild>
+    </mx:State>
+
+
+    <mx:State name="{state_text}" >
+      <mx:AddChild relativeTo="{vBox}" creationPolicy="all">
+        <mx:Text id="txtFull" selectable="false" maxWidth="{this.width - 20}"/>
+      </mx:AddChild>
+    </mx:State>
+
+     <mx:State name="{state_answers_will_vary}" basedOn="{state_text}" enterState="enterState_stateAnswersWillVaryHandler(event)">
+      <mx:AddChild relativeTo="{vBox}" creationPolicy="all">
+        <mx:Button id="btnShow" right="0" verticalCenter="0" click="Clik_btnShowHandler(event)" styleName="ButtonHideDefinition" /> <!-- updateComplete="btnShow_updateCompleteHandler(event)" -->
+      </mx:AddChild>
+    </mx:State>
+
+  </states>
+  
+  <mx:HBox id="vBox" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="100%" verticalAlign="middle" />
+</BaseUIControl>

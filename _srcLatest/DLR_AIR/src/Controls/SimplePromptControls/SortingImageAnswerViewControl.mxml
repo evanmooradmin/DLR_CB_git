@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl xmlns:controls="Controls.Enviroment.*" xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:ns1="Controls.*" currentState="{state_dragged}"
+  >
+ <mx:Script>
+    <![CDATA[
+      import interfaces.IBasePrompt;
+      import mx.events.FlexEvent;
+      import Model.Answers.SortingAnswer;
+      import Controls.AnswerControls.DragAnswers.DragSortingImageControl;
+      import Model.EmbededData;
+      import Model.Answers.SortingImage;
+      import Model.Answers.Answer;
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *
+      *
+      *  Abstract:
+      *
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static const state_dragged:String = "state_dragged";
+      public static const state_dropped:String = "state_dropped";
+      public static const state_correct:String = "state_correct";
+      public static const state_incorrect:String = "state_incorrect";
+
+
+      /**
+      * Private members/properties
+      */
+      private var _answer:SortingImage;
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+
+
+      /**
+      * Private methods
+      */
+      private function dropShadowFilter():DropShadowFilter
+      {
+        return new DropShadowFilter(5,35,13290701);
+      }
+
+
+      /**
+      * Events handler
+      */
+      public function UpdateComplete_dropAnswerHandler(event:FlexEvent):void
+      {
+        lbIndex.visible = !dropAnswer.isDrop;
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function Init(answer:IBasePrompt):void
+      {
+        _answer = answer as SortingImage;
+       //эмбедим картинку на случай если ответ будет неправельный то мы ее покажем
+        img.source = EmbededData.inctance[EmbededData.img + this._answer.source];
+        img.filters = [dropShadowFilter()];
+        lbIndex.text = _answer.answer.toString();
+      }
+
+    
+
+      public override function IsComplete():Boolean
+      {
+       if (_isDeserialize)
+           return true;  
+       return dropAnswer.isDrop;
+      }
+
+      public override function GetText():String
+      {
+        if (_isDeserialize)
+            return this._answer.result;
+        return dropAnswer.GetText();
+      }
+
+      public override function SetIncorrect():void
+      {
+        var source:String = this._answer.source;
+
+        if (dropAnswer.dropObject.answer is SortingImage)
+            source = (dropAnswer.dropObject.answer as SortingImage).source;
+        img.source = EmbededData.inctance[EmbededData.img + source];
+
+        if (dropAnswer.dropObject.shadowFilter == false)
+          img.filters = [];
+        else
+          img.filters = [dropShadowFilter()];
+
+        currentState = state_incorrect;
+      }
+
+      public override function SetCorrect():void
+      {
+        img.source = EmbededData.inctance[EmbededData.img + this._answer.source];
+
+        if (dropAnswer.dropObject == null || dropAnswer.dropObject.shadowFilter == false)
+          img.filters = [];
+        else
+          img.filters = [dropShadowFilter()];
+             
+        currentState = state_correct;
+      }
+      
+      
+      public override function Continue():void
+      {
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+      }
+      
+      
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        this._isDeserialize = false; 
+        this._answer.result = GetText();     
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (needCheckAnswer)
+            this._isDeserialize = true;  
+      }
+      
+      /**
+      * Public members/properties
+      */
+      
+
+      /**
+      * Public methods
+      */
+      
+
+    ]]>
+  </mx:Script>
+
+   <states>
+   <!-- Состояние отвечает за контейнеры в которые надо перетаскивать картинки-->
+    <mx:State name="{state_dragged}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <ns1:DropAnswerControl id="dropAnswer" height="200" width="200" horizontalScrollPolicy="off"
+          verticalScrollPolicy="off" updateComplete="UpdateComplete_dropAnswerHandler(event)" />
+      </mx:AddChild>
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:Label id="lbIndex" color="#FF0000" horizontalCenter="0" verticalCenter="-20" fontSize="15"
+          fontWeight="bold"/>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_dropped}" >
+      <mx:AddChild relativeTo="{this}"  creationPolicy="all">
+        <mx:VBox id="hBoxCorrect" verticalAlign="middle" horizontalAlign="center" >
+            <mx:Image id="img"  height="{dropAnswer.height - 20}" width="{dropAnswer.width - 20}" autoLoad="true"
+              filters="{[new GlowFilter(0xFF0000, 1, 2, 2)]}"/>
+        </mx:VBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_correct}" basedOn="{state_dropped}">
+      <mx:AddChild relativeTo="{hBoxCorrect}" creationPolicy="all">
+             <mx:Image id="imgIconCorrect" source="{EmbededData.inctance.iconCorrect}"/>
+      </mx:AddChild>
+   </mx:State>
+
+     <mx:State name="{state_incorrect}" basedOn="{state_dropped}">
+      <mx:AddChild relativeTo="{hBoxCorrect}" creationPolicy="all">
+             <mx:Image id="imgIconIncorrect"  source="{EmbededData.inctance.iconIncorrect}"/>
+      </mx:AddChild>
+   </mx:State>
+
+  </states>
+</BaseUIControl>

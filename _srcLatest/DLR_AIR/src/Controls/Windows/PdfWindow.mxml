@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+  backgroundColor="0xEEEEEE" backgroundAlpha="0"
+  creationComplete="CreationComplete(event)"
+  alpha="0"
+
+  >
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.controls.Alert;
+      import mx.events.ResizeEvent;
+      import mx.core.Application;
+      import mx.managers.CursorManager;
+      import mx.controls.Button;
+      import mx.controls.PopUpButton;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+      import mx.events.FlexEvent;
+      import mx.effects.Fade;
+
+      private var HandIcon:Class = EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+      private var _height:int;
+      private var _width:int;
+      private var _parent:UIComponent;
+
+      private var pdf:HTMLLoader = new HTMLLoader();
+
+      public static function Show(parent:UIComponent):void
+      {
+          var pdfWindow:PdfWindow = new PdfWindow();
+          
+          pdfWindow.Parent = parent;
+          pdfWindow.Width = parent.width;
+          pdfWindow.Height = parent.height;
+
+          PopUpManager.addPopUp(pdfWindow, parent);
+          PopUpManager.centerPopUp(pdfWindow);
+          pdfWindow.fadeShowPdfWindow.play();
+      }
+
+      private function CreationComplete(event:FlexEvent):void
+      {
+       try
+       {  
+            if (HTMLLoader.pdfCapability == HTMLPDFCapability.STATUS_OK)
+            {
+              var request:URLRequest = new URLRequest("data/pdf/DLRHelp.pdf");
+    
+              width = _width;
+              height = _height;
+    
+              pdf.width = this.width;
+              pdf.height = this.height - 25;
+              pdf.load(request);
+    
+              myWin.addChild(pdf);
+            }
+            else
+            {
+              switch (HTMLLoader.pdfCapability)
+              {
+                case HTMLPDFCapability.ERROR_CANNOT_LOAD_READER:
+                  throw new Error("Can't load reader");
+                case HTMLPDFCapability.ERROR_INSTALLED_READER_NOT_FOUND:
+                  throw new Error("Installed reader not found");
+                case HTMLPDFCapability.ERROR_INSTALLED_READER_TOO_OLD:
+                  throw new Error("Instaled reader too old");
+                case HTMLPDFCapability.ERROR_PREFERRED_READER_TOO_OLD:
+                  throw new Error("Preferred reader too old");
+              }
+            }
+       }
+       catch (e:Error)
+       {
+          fadeHidePdfWindow.play();
+          AlertWindow.Show(this._parent, "OOPS!", e.message);
+       }
+      }
+
+      public function set Height(value:int):void
+      {
+        _height = value;
+
+      }
+
+      public function set Width(value:int):void
+      {
+        _width = value;
+      }
+      
+      public function set Parent(parent:UIComponent):void
+      {
+        this._parent = parent;
+      }
+
+      private function Click_btnCloseHandler(event:MouseEvent):void
+      {
+        fadeHidePdfWindow.play();
+      }
+      private function Hide():void
+      {
+        PopUpManager.removePopUp(this);
+      }
+
+      private function rollOver_btnCloseHandler(event:MouseEvent):void
+      {
+        cursorID = cursorManager.setCursor(HandIcon);
+      }
+
+      private function rollOut_btnCloseHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+    ]]>
+  </mx:Script>
+
+  <mx:Fade target="{this}"  alphaFrom="0.0" alphaTo="1.0" duration="1000" id="fadeShowPdfWindow"/>
+  <mx:Fade target="{this}"  alphaFrom="1.0" alphaTo="0.0" duration="1000" id="fadeHidePdfWindow" effectEnd="Hide();"/>
+  <mx:VBox width="100%" height="100%" horizontalAlign="right">
+    <mx:Button label="Close" styleName="ButtonOKAlerWindow" height="25" id="btnClose" click="Click_btnCloseHandler(event)"
+      rollOver="rollOver_btnCloseHandler(event)" rollOut="rollOut_btnCloseHandler(event)"/>
+    <mx:HTML id="myWin" width="100%"/>
+  </mx:VBox>
+</mx:Canvas>

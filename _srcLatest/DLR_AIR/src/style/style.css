@@ -1,0 +1,290 @@
+/* CSS file */
+.accordion
+{
+	backgroundColor: #FFFFFF;
+	borderThickness: 0;
+	headerHeight: 60;
+	headerStyleName: accHeader;
+	backgroundAlpha: 0.0;
+	fontFamily: Arial;
+	textRollOverColor: #132F50;
+	textSelectedColor: #FCFCFC;
+	fontSize: 34;
+	header-style-name:accordionHeader;
+	borderStyle: none;
+}
+
+.accordionHeader 
+{
+  font-size: 30;
+  fillColors: #ffffff, #ffffff;
+  fillAlphas: 1.0, 1.0;
+  selectedFillColors: #ffffff, #ffffff;
+	cornerRadius: 0;
+	borderColor: #FFFFFF;
+}
+
+DataGrid.LessonHistory
+{
+  verticalGridLines: false;
+  verticalScrollBarStyleName: listVerticalScrollBar;
+  headerStyleName: dataGridHeader;
+  rollOverColor: #FFFFFF;
+  selectionColor: #FFFFFF;
+  selectionDisabledColor: #FFFFFF;
+  verticalAlign: bottom;
+  textRollOverColor: #0B333C;
+  color: #0B333C;
+  textSelectedColor: #0B333C;
+  backgroundColor: #FD0000;
+  dropShadowColor: #FF0000;
+}
+
+VScrollBar.listVerticalScrollBar
+{
+  trackSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_trackSkin.png");
+  thumbUpSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_thumbUpSkin.png");
+  thumbOverSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_thumbOverSkin.png");
+  thumbDownSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_thumbDownSkin.png");
+  downArrowUpSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_downArrowUpSkin.png");
+  downArrowOverSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_downArrowOverSkin.png");
+  downArrowDownSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_downArrowDownSkin.png");
+  downArrowDisabledSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_downArrowDisabledSkin.png");
+  upArrowUpSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_upArrowUpSkin.png");
+  upArrowOverSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_upArrowOverSkin.png");
+  upArrowDownSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_upArrowDownSkin.png");
+  upArrowDisabledSkin: Embed(source="images/mainPage/scrollbar/assets/VScrollBar_upArrowDisabledSkin.png");
+  verticalScrollBarStyleName: listVerticalScrollBar;
+}
+
+
+Button.ButtonHideDefinition
+{
+  upSkin: Embed(source="images/mainPage/buttonHide/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/mainPage/buttonHide/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/mainPage/buttonHide/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/buttonHide/assets/Button_disabledSkin.png");
+}
+
+Button.ButtonHideDefinitionRight
+{
+  upSkin: Embed(source="images/mainPage/buttonHide/assets/Button_upSkin_Right.png");
+  overSkin: Embed(source="images/mainPage/buttonHide/assets/Button_overSkin_Right.png");
+  downSkin: Embed(source="images/mainPage/buttonHide/assets/Button_downSkin_Right.png");
+  disabledSkin: Embed(source="images/mainPage/buttonHide/assets/Button_disabledSkin_Right.png");
+}
+
+Button.ButtonDrawingAreaDrow
+{
+  upSkin: Embed(skinClass='btn_drawingArea_Pencil_off');
+  overSkin: Embed(skinClass='btn_drawingArea_Pencil_on');
+  downSkin: Embed(skinClass='btn_drawingArea_Pencil_on');
+  disabledSkin: Embed(skinClass='btn_drawingArea_Pencil_off');
+  selectedUpSkin: Embed(skinClass='btn_drawingArea_Pencil_on');
+  selectedOverSkin: Embed(skinClass='btn_drawingArea_Pencil_on');
+  selectedDownSkin: Embed(skinClass='btn_drawingArea_Pencil_on');
+  selectedDisabledSkin: Embed(skinClass='btn_drawingArea_Pencil_off');
+}
+Button.ButtonDrawingAreaText
+{
+	upSkin: Embed(skinClass='btn_drawingArea_off');
+	overSkin: Embed(skinClass='btn_drawingArea_on');
+	downSkin: Embed(skinClass='btn_drawingArea_on');
+	disabledSkin: Embed(skinClass='btn_drawingArea_off');
+	selectedUpSkin: Embed(skinClass='btn_drawingArea_on');
+	selectedOverSkin: Embed(skinClass='btn_drawingArea_on');
+	selectedDownSkin: Embed(skinClass='btn_drawingArea_on');
+	selectedDisabledSkin: Embed(skinClass='btn_drawingArea_off');
+}
+
+
+Button.button
+{
+	color: #41BBEA;
+	upSkin: Embed(source="images/mainPage/button/assets/Button_upSkin.png");
+	overSkin: Embed(source="images/mainPage/button/assets/Button_overSkin.png");
+	downSkin: Embed(source="images/mainPage/button/assets/Button_downSkin.png");
+	disabledSkin: Embed(source="images/mainPage/button/assets/Button_disabledSkin.png");
+	textRollOverColor: #41BBEA;
+	textSelectedColor: #41BBEA;
+	fontFamily: Arial;
+	fontSize: 13;
+}
+
+Button.buttonQuit
+{
+	color: #8CC63E;
+	cornerRadius: 0;
+	fillAlphas: 1.0, 1.0, 1.0, 1.0;
+	fillColors: #FDFBFB, #FDFBFB;
+	fontFamily: Arial;
+	fontSize: 34;
+	textAlign: left;
+	themeColor: #FFFFFF;
+	textRollOverColor: #8CC63E;
+	textSelectedColor: #8CC63E;
+	disabledColor: #8CC63E;
+	upIcon: Embed(source="images/mainPage/Accordion/04.png");
+	overIcon: Embed(source="images/mainPage/Accordion/04.png");
+	downIcon: Embed(source="images/mainPage/Accordion/04.png");
+	disabledIcon: Embed(source="images/mainPage/Accordion/04.png");
+	selectedUpIcon: Embed(source="images/mainPage/Accordion/04.png");
+	selectedOverIcon: Embed(source="images/mainPage/Accordion/04.png");
+	selectedDownIcon: Embed(source="images/mainPage/Accordion/04.png");
+	selectedDisabledIcon: Embed(source="images/mainPage/Accordion/04.png");
+	paddingTop: 2;
+	paddingLeft: 4;
+}
+
+Button.button1
+{
+  upSkin: Embed(source="images/mainPage/button1/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/mainPage/button1/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/mainPage/button1/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/button1/assets/Button_disabledSkin.png");
+  selectedUpSkin: Embed(source="images/mainPage/button1/assets/Button_upSkin.png");
+  selectedOverSkin: Embed(source="images/mainPage/button1/assets/Button_overSkin.png");
+  selectedDownSkin: Embed(source="images/mainPage/button1/assets/Button_downSkin.png");
+  selectedDisabledSkin: Embed(source="images/mainPage/button1/assets/Button_disabledSkin.png");
+  color: #4D4E50;
+  textRollOverColor: #4D4E50;
+  textSelectedColor: #4D4E50;
+  disabledColor: #4D4E50;
+}
+
+Button.CloseAbout
+{
+  upSkin: Embed(source="images/AboutWindow/Button/Button_upSkin.png");
+  overSkin: Embed(source="images/AboutWindow/Button/Button_overSkin.png");
+  downSkin: Embed(source="images/AboutWindow/Button/Button_downSkin.png");
+  disabledSkin: Embed(source="images/AboutWindow/Button/Button_disabledSkin.png");
+  selectedUpSkin: Embed(source="images/AboutWindow/Button/Button_disabledSkin.png");
+  selectedOverSkin: Embed(source="images/AboutWindow/Button/Button_disabledSkin.png");
+  selectedDownSkin: Embed(source="images/AboutWindow/Button/Button_disabledSkin.png");
+  selectedDisabledSkin: Embed(source="images/AboutWindow/Button/Button_disabledSkin.png"); 
+}
+
+Button.ButtonOKAlerWindow
+{
+  upSkin: Embed(source="images/AlertWindow/button_ok/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/AlertWindow/button_ok/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/AlertWindow/button_ok/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/AlertWindow/button_ok/assets/Button_disabledSkin.png");
+}
+
+Button.ClearHistory
+{
+  upSkin: Embed(source="images/mainPage/button4/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/mainPage/button4/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/mainPage/button4/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/button4/assets/Button_disabledSkin.png");
+  color: #4D4E50;
+  textRollOverColor: #4D4E50;
+  textSelectedColor: #4D4E50;
+  disabledColor: #4D4E50;
+}
+
+Button.ButtonPreferencesOK
+{
+  upSkin: Embed(source="images/preferences/buttonOK/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/preferences/buttonOK/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/preferences/buttonOK/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/preferences/buttonOK/assets/Button_disabledSkin.png");
+}
+
+ComboBox.ComboBoxPreferences
+{
+  upSkin: Embed(source="images/preferences/combobox/assets/ComboBox_upSkin.png");
+  overSkin: Embed(source="images/preferences/combobox/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/preferences/combobox/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/preferences/combobox/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/preferences/combobox/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/preferences/combobox/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/preferences/combobox/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/preferences/combobox/assets/ComboBox_editableDisabledSkin.png");
+  dropdownStyleName: listVerticalScrollBar;
+}
+
+Button.ButtonPreferencesRestore
+{
+  upSkin: Embed(source="images/preferences/buttonRestore/assets/Button_upSkin.png");
+  overSkin: Embed(source="images/preferences/buttonRestore/assets/Button_overSkin.png");
+  downSkin: Embed(source="images/preferences/buttonRestore/assets/Button_downSkin.png");
+  disabledSkin: Embed(source="images/preferences/buttonRestore/assets/Button_disabledSkin.png");
+}
+
+ComboBox.comboBox
+{
+  fillAlphas: 0.6, 0.6, 0.6, 0.6;
+  upSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_upSkin.png");
+  overSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox2/assets/ComboBox_editableDisabledSkin.png");
+  color: #41BBEA;
+  text-selected-color : #41BBEA; 
+  fontFamily: Arial;
+  fontSize: 18;
+  fontWeight: normal;
+  dropdownStyleName: listVerticalScrollBar;
+}
+
+ComboBox.ComboBox1
+{
+  upSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_upSkin.png");
+  overSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox1/assets/ComboBox_editableDisabledSkin.png");
+  color: #BC1A3D;
+  textRollOverColor: #000000;
+  textSelectedColor: #BC1A3D;
+  fontSize: 18;
+  dropdownStyleName: comboBoxDropdown;
+}
+
+ComboBox.comboBox2
+{
+  fillAlphas: 0.6, 0.6, 0.6, 0.6;
+  overSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_editableDisabledSkin.png");
+  dropdownStyleName: listVerticalScrollBar;
+  upSkin: Embed(source="images/mainPage/combobox2/assets/ComboBox_upSkin.png");
+}
+
+ComboBox.comboBox3
+{
+  upSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_upSkin.png");
+  overSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox3/assets/ComboBox_editableDisabledSkin.png");
+	dropdownStyleName: listVerticalScrollBar;
+}
+
+ComboBox.comboBox4
+{
+  upSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_upSkin.png");
+  overSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_overSkin.png");
+  downSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_downSkin.png");
+  disabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_disabledSkin.png");
+  editableUpSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_editableUpSkin.png");
+  editableOverSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_editableOverSkin.png");
+  editableDownSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_editableDownSkin.png");
+  editableDisabledSkin: Embed(source="images/mainPage/ComboBoxes/combobox4/assets/ComboBox_editableDisabledSkin.png");
+  dropdownStyleName: listVerticalScrollBar;
+}

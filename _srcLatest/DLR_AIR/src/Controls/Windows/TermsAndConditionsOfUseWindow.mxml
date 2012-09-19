@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="418" height="370" borderStyle="solid" cornerRadius="8" backgroundColor="#FFFFFF">
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+ //     import Model.BindableData;
+      import mx.managers.CursorManager;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+
+      [Bindable]
+      private var HandIcon:Class =EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+      public static function Show(parent:UIComponent, content:String):void
+      {
+        var termsWindow:TermsAndConditionsOfUseWindow = new TermsAndConditionsOfUseWindow();
+
+        PopUpManager.addPopUp(termsWindow, parent, true);
+        PopUpManager.centerPopUp(termsWindow);
+
+        termsWindow.txtContent.htmlText = content;
+      }
+
+      private function Click_btnOK(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+      }
+
+      private function MouseOver_btnOK(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function MouseOut_btnOK(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+    ]]>
+  </mx:Script>
+
+  <mx:Label x="10" y="10" text="Terms and Conditions of Use" fontWeight="bold" fontSize="16" fontFamily="Arial"/>
+  <mx:Text x="10" y="43" width="396" height="277" id="txtContent" selectable="false"/>
+  <mx:Button x="180.5" y="328" label="OK" id="btnOK" click="Click_btnOK(event)" mouseOver="MouseOver_btnOK(event)"
+    mouseOut="MouseOut_btnOK(event)" styleName="ButtonOKAlerWindow"/>
+</mx:Canvas>

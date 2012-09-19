@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" width="118" height="26" 
+  updateComplete="UpdateComplete()">
+
+  <mx:Script>
+    <![CDATA[
+      private function UpdateComplete():void
+      {
+        image.graphics.beginFill(data.Color); 
+        image.graphics.drawRect(0, 0, image.width, image.height);
+        image.graphics.endFill();
+      }
+    ]]>
+  </mx:Script>
+  
+  <mx:Image id="image" height="23" width="23"/>
+  <mx:Label width="66" text="{data.Text}"/>
+</mx:HBox>

@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+  currentState="{state_edit}" xmlns:ns1="Controls.FlowBox.*" width="{ActivityControl.MAX_WIDTH - 50}" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+<mx:Script>
+   <![CDATA[
+     import interfaces.IBasePrompt;
+     import Controls.ActivityControl;
+     import Model.FactoryRegExp;
+     import Controls.SelectableLabel;
+     import Model.Prompts.FillInTheBlanks;
+     import Model.Prompts.Prompt;
+     import Model.Answers.Answer;
+     import Model.EmbededData;
+     import Model.Answers.VariantORAnswerConteiner;
+      /***************************************************************
+      *
+      *  Module Name:
+      *
+      *
+      *  Abstract:
+      *
+      *
+      *  Author:
+      *     Ruban Sergey
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      protected var _answer:VariantORAnswerConteiner;
+      private var _isContinue:Boolean = false;
+      private var _variantOrAnswerContainer:VariantORAnswerConteiner;
+      private var _isCheckAnswer:Boolean = false;
+      private var _prompt:Prompt;
+        
+      private const state_edit:String = "state_edit";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_ShowAnswer:String = "state_ShowAnswer";
+   
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+      
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      public override function FontName():void
+      {
+        textArea.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+        toText.setStyle("fontFamily", _fontName);
+        afterText.setStyle("fontFamily", _fontName); 
+        descriptionHeaderIncorrect.setStyle("fontFamily", _fontName);
+        descriptionHeaderCorrect.setStyle("fontFamily", _fontName);
+        afterTextIncorrect.setStyle("fontFamily", _fontName);
+        afterTextCorrect.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        textArea.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+        toText.setStyle("fontSize", _fontSize);
+        afterText.setStyle("fontSize", _fontSize);
+        descriptionHeaderIncorrect.setStyle("fontSize", _fontSize);
+        descriptionHeaderCorrect.setStyle("fontSize", _fontSize);
+        afterTextIncorrect.setStyle("fontSize", _fontSize);
+        afterTextCorrect.setStyle("fontSize", _fontSize);
+        
+        imgCorrect.width = _fontSize;
+        imgCorrect.height = _fontSize;
+        imgIncorrect.width = _fontSize;
+        imgIncorrect.height = _fontSize;
+      }
+
+      public override function FontColor():void
+      {
+        textArea.setStyle("color", _fontColor);
+        lbCorrect.setStyle("color", _fontColor);
+        lbIncorrect.setStyle("color", _fontColor);
+        toText.setStyle("color", _fontColor);
+        afterText.setStyle("color", _fontColor);
+        descriptionHeaderIncorrect.setStyle("color", _fontColor);
+        descriptionHeaderCorrect.setStyle("color", _fontColor);
+        afterTextIncorrect.setStyle("color", _fontColor);
+        afterTextCorrect.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function Continue():void
+      {
+        _isContinue = true;
+        /*if (currentState == state_correct && HboxIncorrectConteiner.parent == VboxIncorrectConteiner)
+            VboxIncorrectConteiner.removeChild(HboxIncorrectConteiner);*/
+        currentState = state_ShowAnswer;
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (_isDeserialize)
+            return true;
+        if (FactoryRegExp.trim(textArea.text) != "")
+          return true;
+        return false;
+      }
+
+      public override function Init(prompt:IBasePrompt):void
+      {
+        this._prompt = prompt as FillInTheBlanks;
+        this._variantOrAnswerContainer = (prompt as FillInTheBlanks).variantOrAnswerContainer;
+        //Проверяем есть ли в сроке разделитель 
+        if ((prompt as FillInTheBlanks).text.toString().search(Prompt.separatorPatternString) != -1)
+        {
+          //Разбиваем строку на строку до сепаратора и после
+           var array:Array = (prompt as FillInTheBlanks).text.toString().split(Prompt.separator); 
+           toText.htmlText = array[0];
+           afterText.htmlText = array[1];
+        }
+        else
+           toText.htmlText = (prompt as FillInTheBlanks).text.toString();
+      }
+
+      public override function GetText():String
+      {
+        return textArea.text;
+      }
+
+      public override function SetCorrect():void
+      {
+        if (!_isContinue)
+        {
+          //Проверяем если была пройдена проверка на коректность введеного текста введеного пользователем
+          //Используеться когода отключена опция Check Answer
+         if (currentState == state_incorrect || this._isCheckAnswer == true)
+          {
+           // if ( this._isCheckAnswer == true)
+           //     currentState = state_answer_variant_only;
+           // else
+             currentState = state_correct;
+
+              for each (var item:Answer in _variantOrAnswerContainer.ChildAnswers())
+              {
+                 lbCorrect.htmlText += '<font color="#' + SelectableLabel.IntToHex(EmbededData.inctance.iconCorrectColor.toString()) + '"> '+
+                                      item.text + "</font>";
+                 lbCorrect.htmlText += ' <font color="#B5B5B5">or</font>';
+              }
+              lbCorrect.htmlText = lbCorrect.htmlText.replace(new RegExp('<font color="#B5B5B5">or</font>\\s*?$','g'),'');
+          }
+          else
+          {
+            currentState = state_ShowAnswer;
+            lbCorrect.htmlText = '<font color="#'+ SelectableLabel.IntToHex(EmbededData.inctance.iconCorrectColor.toString()) + '">'+ textArea.text + "</font>";
+          }
+        }
+      }
+
+      public override function SetIncorrect():void
+      {
+        if (!_isContinue)
+          currentState = state_incorrect;
+          lbIncorrect.htmlText = '<font color="#'+ SelectableLabel.IntToHex(EmbededData.inctance.iconIncorrectColor.toString()) + '">'+ textArea.text + "</font>";
+      }
+
+      public override function DefaultFont():void
+      {
+        toText.setStyle("fontFamily", "Futura");
+        afterText.setStyle("fontFamily", "Futura");
+        descriptionHeaderIncorrect.setStyle("fontFamily", "Futura");
+        descriptionHeaderCorrect.setStyle("fontFamily", "Futura");
+        afterTextIncorrect.setStyle("fontFamily", "Futura");
+        afterTextCorrect.setStyle("fontFamily", "Futura");
+        textArea.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+         this._prompt.result = textArea.text;
+      }
+      
+     //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        _isDeserialize = true;
+        textArea.text = this._prompt.result;
+      }
+      
+      /**
+      * Public members/properties
+      */
+      public function set isCheckAnswer(value:Boolean):void
+      {
+        this._isCheckAnswer = value;
+      }
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+</mx:Script>
+   <transitions>
+      <mx:Transition fromState="{state_incorrect}" toState="{state_correct}">
+        <mx:Parallel id="showPromptEffect" target="{HboxCorrectConteiner}">
+          <mx:Resize duration="300" heightFrom="0" id="showResizeEffect" target="{VboxIncorrectConteiner}" />
+          <mx:Sequence>
+            <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0"/>
+            <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1"/>
+          </mx:Sequence>
+        </mx:Parallel>
+      </mx:Transition>
+    </transitions>
+
+   <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <ns1:FlowBox  width="{this.width}" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+          <mx:Text id="toText" selectable="false" maxWidth="{this.width}"/>
+          <mx:VBox id="vbContainer">
+            <mx:TextInput id="textArea" fontWeight="bold" maxChars="255"/>
+          </mx:VBox>
+          <mx:Text id="afterText" selectable="false" maxWidth="{this.width - toText.width - vbContainer.width}"/>
+        </ns1:FlowBox>
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}" basedOn="{state_edit}">
+      <mx:AddChild relativeTo="{vbContainer}" creationPolicy="all">
+        <mx:VBox id="VboxIncorrectConteiner">
+          <ns1:FlowBox id="HboxIncorrectConteiner" verticalAlign="middle" width="{this.width}" >
+            <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect"/>
+             <mx:Text id="descriptionHeaderIncorrect" selectable="false" htmlText="{toText.htmlText}" maxWidth="{this.width}"/>
+              <mx:Text id="lbIncorrect" color="#e54e49" selectable="false" />
+             <mx:Text id="afterTextIncorrect" selectable="false" htmlText="{afterText.htmlText}" maxWidth="{this.width}"/> 
+          </ns1:FlowBox>
+        </mx:VBox>
+      </mx:AddChild>
+      <mx:RemoveChild target="{toText}"/>
+      <mx:RemoveChild target="{textArea}"/>
+    </mx:State>
+
+     <mx:State name="{state_correct}" basedOn="{state_incorrect}">
+      <mx:AddChild relativeTo="{vbContainer}" creationPolicy="all">
+        <ns1:FlowBox id="HboxCorrectConteiner" verticalAlign="middle" width="{this.width}">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect"/>
+          <mx:Text id="descriptionHeaderCorrect" selectable="false" htmlText="{toText.htmlText}" maxWidth="{this.width}"/>
+          <mx:Text id="lbCorrect" color="#e54e49" selectable="false"/>
+          <mx:Text id="afterTextCorrect" selectable="false" htmlText="{afterText.htmlText}" maxWidth="{this.width}"/>
+        </ns1:FlowBox>
+      </mx:AddChild>
+      <mx:RemoveChild target="{textArea}"/>
+    </mx:State>
+
+    <mx:State name="{state_ShowAnswer}" basedOn="state_correct">
+      <mx:RemoveChild target="{VboxIncorrectConteiner}"/>
+    </mx:State>
+
+   
+  </states>
+</BaseUIControl>

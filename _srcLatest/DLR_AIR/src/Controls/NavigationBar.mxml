@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="34" backgroundColor="#DDDEE0"
+  borderColor="#DDDEE0">
+
+  <mx:Script>
+    <![CDATA[
+    	import Model.Security.EmcMapAndVersion;
+      import Controls.Windows.YNWindow;
+      import Controls.Windows.PreferencesWindow;
+      import interfaces.em.EMUserTypes;
+      import mx.managers.CursorManager;
+      import Model.EmbededData;
+      import mx.events.EffectEvent;
+      import mx.core.Application;
+      import Model.Events.NavigationBarEvent;
+      import mx.events.FlexEvent;
+      import Model.Preferences;
+      import mx.events.ListEvent;
+      import Model.Activity;
+      import Model.Unit;
+      import Model.Emc;
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\NavigationBar.mxml
+      *
+      *  Abstract:
+      *     This is navigation control
+      *
+      *  Author:
+      *     Evgenij Welikij   19-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _activity:Activity;
+      private var _preferences:Preferences;
+
+      private var _fingerIcon:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+      private var _isMouseHandlerActive:Boolean = true;
+
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+      private function Change_cmbWeek(event:ListEvent):void
+      {
+        cmbLesson.dataProvider = (cmbWeek.selectedItem as Unit).activitys;
+        cmbLesson.labelField = "title";
+      }
+
+      private function Change_cmbFontName(event:ListEvent):void 
+      {
+        var pref:Preferences = _preferences;
+    //    pref.fontName = cmbFontName.selectedItem.fontName;
+
+        dispatchEvent(new NavigationBarEvent(NavigationBarEvent.CHANGE_FONT_NAME, pref,
+          (cmbLesson.selectedItem as Activity)));
+      }
+
+      private function Change_cmbFontSize(event:ListEvent):void
+      {
+        var pref:Preferences = _preferences;
+     //   pref.fontSize = cmbFontSize.selectedItem as int;
+
+        dispatchEvent(new NavigationBarEvent(NavigationBarEvent.CHANGE_FONT_SIZE, pref,
+          (cmbLesson.selectedItem as Activity)));
+      }
+
+      private function Click_btnChangeLesson(event:MouseEvent):void
+      {
+        dispatchEvent(new NavigationBarEvent(NavigationBarEvent.CHANGE_ACTIVITY, _preferences,
+          cmbLesson.selectedItem as Activity));
+      }
+
+      private function rollOver_btnChangeLessonHandler(event:MouseEvent):void
+      {
+        if (_isMouseHandlerActive)
+            _cursorID = CursorManager.setCursor(_fingerIcon);
+      }
+
+      private function rollOut_btnChangeLessonHandler(event:MouseEvent):void
+      {
+        if (_isMouseHandlerActive)
+            CursorManager.removeCursor(_cursorID);
+      }
+
+      private function keyDown_cmbFontSizeHandler(event:KeyboardEvent):void
+      {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        event.stopPropagation(); 
+      }
+      
+      private function keyUp_cmbFontSizeHandler(event:KeyboardEvent):void
+      {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        event.stopPropagation();
+      }
+      
+      private function Click_btnChangePreferences(event:MouseEvent):void
+      {
+        var callBackFunction:Function = QuizControl.instance.UpdatePreferences;
+        PreferencesWindow.Show((Application.application as Application), preferences,  callBackFunction);
+      }
+      
+      private function Change_chBoxCheckAnswer(event:Event):void
+      {
+       // YNWindow.Show((Application.application as Application),"", "The use of this option will lead to losing current data", OkYNWindow, NoYNWindow); 
+        _preferences.isCheckAnswer = chBoxCheckAnswer.selected;
+        QuizControl.instance.UpdatePreferences();
+      } 
+      
+      private function OkYNWindow():void 
+      {
+        _preferences.isCheckAnswer = chBoxCheckAnswer.selected;
+        QuizControl.instance.UpdatePreferences();
+        dispatchEvent(new NavigationBarEvent(NavigationBarEvent.CHANGE_ACTIVITY, _preferences, cmbLesson.selectedItem as Activity));
+        
+       // QuizControl.instance.Rebuild();
+      }
+     
+      private function NoYNWindow():void
+      {
+        chBoxCheckAnswer.selected = !chBoxCheckAnswer.selected;
+      }
+      
+      /**
+      * Initialization
+      */
+      public function Init(activity:Activity, preferences:Preferences):void
+      {
+        this.preferences = preferences;
+
+        this.activity = activity;
+     
+        chBoxCheckAnswer.selected = preferences.isCheckAnswer; 
+        if (QuizControl.userType == EMUserTypes.EM_Student || QuizControl.userType == EMUserTypes.EM_Teacher_ShowReport)
+            {
+              cmbWeek.enabled = false;
+              cmbLesson.enabled = false;
+              btnChangeLesson.enabled = false;
+              btnChangeLesson.removeEventListener(MouseEvent.ROLL_OVER, rollOver_btnChangeLessonHandler)
+              btnChangeLesson.removeEventListener(MouseEvent.ROLL_OUT, rollOut_btnChangeLessonHandler);
+              _isMouseHandlerActive = false;
+              chBoxCheckAnswer.visible = false;
+            }
+      }
+      
+     private function initialize_imgHandler(event:FlexEvent):void	
+     {
+	    //  img.source = EmbededData.inctance.EmbededIcon(EmcMapAndVersion.currentMap.sn);      
+	   }
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      /**
+      * Public members/properties
+      */
+      public function get preferences():Preferences
+      {
+        return _preferences;
+      }
+      public function set preferences(value:Preferences):void
+      {
+        this._preferences = value;
+
+        var defaultFont:Object = new Object();
+        defaultFont.fontName = "Default";
+
+        var fonts:Array = new Array();
+        fonts.push(defaultFont);
+
+        fonts = fonts.concat(value.arrFontName);
+
+    //    cmbFontName.dataProvider = fonts;
+   //     cmbFontName.labelField = "fontName";
+        
+        for (var i:int = 0; i < value.arrFontName.length; i++)
+        {
+          if (fonts[i].fontName == value.fontName)
+           break;
+        }
+     //   cmbFontName.selectedIndex = i;
+
+        // init font sizes
+     //   cmbFontSize.dataProvider = value.arrFontSize;
+     //   cmbFontSize.selectedItem = value.fontSize;
+      }
+
+      public function get activity():Activity
+      {
+        return _activity;
+      }
+      public function set activity(value:Activity):void
+      {
+        if (_activity == value)
+            return
+        this._activity = value;
+
+        // init weeks
+        cmbWeek.dataProvider = value.parentSection.parentUnit.parentEmc.units;
+        cmbWeek.labelField = "title";
+        cmbWeek.selectedItem = value.parentSection.parentUnit;
+
+        // init lessons
+        cmbLesson.dataProvider = (cmbWeek.selectedItem as Unit).activitys;
+        cmbLesson.labelField = "title";
+        cmbLesson.selectedItem = value;
+      }
+
+
+      /**
+      * Public methods
+      */
+      public function DeleteYourself():void
+      {
+         if (this.parent != null)
+          this.parent.removeChild(this);
+      }
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Label x="10" y="9" text="Lesson" color="#414142" fontSize="9"/>
+ <!-- <mx:Label x="560" y="10" text="Type" color="#414142" fontSize="9"/> -->
+  <mx:ComboBox x="56" y="5" width="222"  height="25" id="cmbWeek" styleName="comboBox2" change="Change_cmbWeek(event)"/>
+ <!-- <mx:ComboBox x="598" y="5" width="108" height="25" id="cmbFontName" styleName="comboBox4"
+    change="Change_cmbFontName(event)"/> -->
+ <!-- <mx:ComboBox x="716" y="5" width="70" height="25" id="cmbFontSize" styleName="comboBox3"
+    change="Change_cmbFontSize(event)" keyDown="keyDown_cmbFontSizeHandler(event)" keyUp="keyUp_cmbFontSizeHandler(event)"/> -->
+  <mx:ComboBox x="306" y="5" width="119" height="25" id="cmbLesson" styleName="comboBox4"/>
+  <mx:Button x="451" y="6" label="CHANGE LESSON" width="112" height="22" color="#414142" textAlign="center"
+    fontWeight="bold" fontSize="9" id="btnChangeLesson" styleName="button2" click="Click_btnChangeLesson(event)" buttonMode="true"
+    />
+  <mx:VRule x="580" y="0" height="34" strokeColor="#A5A6A8"/>
+ 
+  <mx:CheckBox id="chBoxCheckAnswer" label="CHECK ANSWER"  x="589" verticalCenter="0" change="Change_chBoxCheckAnswer(event)" fontSize="9" fontWeight="bold" />
+  <mx:Button x="718" verticalCenter="0" label="PREFERENCES" width="98" height="22" color="#414142" textAlign="center" buttonMode="true"
+    fontWeight="bold" fontSize="9" id="btnChangePreferences" styleName="button2" click="Click_btnChangePreferences(event)" right="5" /> 
+  
+</mx:Canvas>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="378" height="206" backgroundColor="#FFFFFF"
+  creationComplete="CreationCompleteHandler(event)" backgroundImage="@Embed(source='style/images/LicenceWindow/bkg.jpg')" borderStyle="solid" borderThickness="2">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import flash.net.navigateToURL;
+      import mx.managers.CursorManager;
+      import mx.events.FlexEvent;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Model\Licence.as
+      *
+      *  Abstract:
+      *     This is licence window control
+      *
+      *  Author:
+      *     Evgenij Welikij   04-December-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+      public static function Show(parent:UIComponent, url:String, callBackComplete:Function,
+        callBackFault:Function):LicenceWindow
+      {
+        var licenceWindow:LicenceWindow = new LicenceWindow();
+        licenceWindow.url = url;
+        licenceWindow.callBackActivateComplete = callBackComplete;
+        licenceWindow.callBackActivateFault = callBackFault;
+
+        PopUpManager.addPopUp(licenceWindow, parent, true);
+        PopUpManager.centerPopUp(licenceWindow);
+
+        return licenceWindow;
+      }
+
+
+      /**
+      * Private members/properties
+      */
+      private var _url:String = "";
+      private var loader:URLLoader = new URLLoader();
+
+      private var _callBackActivateComplete:Function;
+      private var _callBackActivateFault:Function;
+
+      private var _waitWindow:WaitWindow;
+
+      [Bindable]
+      private var HandIcon:Class = EmbededData.inctance.fingerIcon;
+      private var cursorID:int;
+
+
+      /**
+      * Private methods
+      */
+      private function CallBack_AlerWindow():void
+      {
+        PopUpManager.removePopUp(this);
+        _callBackActivateComplete(txtInputKey.text);
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function CreationCompleteHandler(event:FlexEvent):void
+      {
+        loader.addEventListener(Event.COMPLETE, Complete_loaderHandler);
+        loader.addEventListener(IOErrorEvent.IO_ERROR, IOError_loaderHandler);
+        loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, SecurityError_loaderHandler);
+      }
+
+      private function Click_btnCancelHandler(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+        _callBackActivateFault();
+      }
+
+      private function Click_btnOKHandler(event:MouseEvent):void
+      {
+        var request:URLRequest = new URLRequest(_url + txtInputKey.text);
+
+        loader.load(request);
+        _waitWindow = WaitWindow.Show(this, "Licence manager");
+      }
+
+      private function IOError_loaderHandler(event:IOErrorEvent):void
+      {
+        WaitWindow.Hide(_waitWindow);
+        AlertWindow.Show(this, "OOPS!", "Unable to connect");
+      }
+
+      private function SecurityError_loaderHandler(event:SecurityErrorEvent):void
+      {
+        WaitWindow.Hide(_waitWindow);
+        AlertWindow.Show(this, "OOPS!", "Unable to connect");
+      }
+
+      private function Complete_loaderHandler(event:Event):void
+      {
+        WaitWindow.Hide(_waitWindow);
+        var xml:XML = XML(loader.data)
+
+        if (xml.hasOwnProperty("error"))
+          AlertWindow.Show(this, "OOPS!", "The activation key you entered does not appear to be valid. Please enter a valid activation key to activate this application.");
+        else if (xml.hasOwnProperty("pckey"))
+          AlertWindow.Show(this, "Congratulations!", "This application has been activated", CallBack_AlerWindow);
+      }
+
+      private function RollOver_btnOK(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function RollOut_btnOK(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+      private function RollOver_btnCancel(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(HandIcon);
+      }
+
+      private function RollOut_btnCancel(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+      private function Click_linkButtonHandler(event:MouseEvent):void
+      {
+        navigateToURL(new URLRequest("http://www.evan-moor.com/Help/Faq.aspx#83"));
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      /**
+      * Public members/properties
+      */
+      public function set url(value:String):void
+      {
+        _url = value;
+      }
+
+      public function set callBackActivateComplete(value:Function):void
+      {
+        _callBackActivateComplete = value;
+      }
+
+      public function set callBackActivateFault(value:Function):void
+      {
+        _callBackActivateFault = value;
+      }
+
+
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Label x="10" y="10" text="Activation Key"/>
+  <mx:Button x="91.5" y="134" label="OK" id="btnOK" click="Click_btnOKHandler(event)" styleName="ButtonOKAlerWindow"
+    rollOver="RollOver_btnOK(event)" rollOut="RollOut_btnOK(event)"/>
+  <mx:Button x="219.5" y="134" label="Cancel" id="btnCancel" click="Click_btnCancelHandler(event)"
+    styleName="ButtonOKAlerWindow" rollOver="RollOver_btnCancel(event)" rollOut="RollOut_btnCancel(event)"/>
+  <mx:TextInput x="43" y="104" width="321" id="txtInputKey" textAlign="left"/>
+  <mx:Label x="10" y="106" text="Key"/>
+  <mx:Text x="10" y="36" width="354" height="60" text="In order to activate your application, you must enter in an activation key. This must be entered exactly as it appears in the confirmation email you received from Evan-Moor Educational Publishers."
+    selectable="false"/>
+  <mx:LinkButton id="linkButton" x="10" y="170" label="Don’t have an activation key?" fontWeight="normal" textDecoration="underline" themeColor="#FFFFFF"
+    click="Click_linkButtonHandler(event)"/>
+</mx:Canvas>

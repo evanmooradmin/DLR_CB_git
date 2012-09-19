@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" implements="interfaces.IFontStyle,  interfaces.IResult"
+  currentState="{state_edit}" verticalScrollPolicy="off" horizontalScrollPolicy="off"
+  xmlns:ns1="Controls.Enviroment.*" creationComplete="creationCompleteHandler(event)" xmlns:PromptControls="Controls.PromptControls.*" width="100%" >
+
+  <mx:Script>
+    <![CDATA[
+      import Model.Events.VerticalScrollCreate;
+      import Model.StateTypes;
+      import Controls.PromptControls.Open_endedWritingPromptControl;       
+      import interfaces.em.EMUserTypes;
+      import Controls.Enviroment.TextExended;
+      import Controls.Enviroment.HeaderControl;
+      import Model.Events.StateEvent;
+      import mx.events.ScrollEvent;
+      import Model.Preferences;
+      import Controls.QuizControl;
+      import Model.FactoryRegExp; 
+      import Model.Answers.VariantORAnswer;
+      import Model.Prompts.Open_endedWritingPrompt; 
+      import Model.Events.AnswerWillVaryViewControlEvent; 
+      import Controls.SimplePromptControls.AnswerWillVaryViewControl;
+      import mx.events.ResizeEvent;
+      import mx.effects.Resize;
+      import mx.events.FlexEvent;
+      import Controls.ActivityControl;
+      import Model.Answers.Answer;
+      import Model.Prompts.Prompt;
+      import interfaces.IBasePrompt;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\Open_endedWritingPrompt\Open_endedWritingPromptControlSimple.mxml
+      *
+      *  Abstract:
+      *     This is simple open-ended writing prompt control
+      *
+      *  Author:
+      *     Evgenij Welikij   22-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private const state_edit:String = "state_edit";
+      private const state_text:String = "state_text";
+      private const state_answers_will_vary:String = "state_answers_will_vary";
+      private const state_answers_will_vary_with_DrawingArea:String = "state_answers_will_vary_with_DrawingArea";
+      
+      //Состояние содержит поле для ввода и кнопки для переключения режисов ввода текста
+      private const state_edit_keybord:String = "state_edit_keybord";
+      private const state_drow:String= "state_drow";
+      private const state_correct_with_DrawingArea:String = "state_correct_with_DrawingArea";
+
+      private var answerWillWaryControl:AnswerWillVaryViewControl;
+      private var _answersWariant:Array = new Array();
+    
+      private var isContinueOneState:Boolean = false;
+      private var _prompt:Prompt;
+      //Можно ли уменьшать ширену котнрола. Используеться при появлении скорла в приложении
+      private var _isCanResize:Boolean = true;
+      private var _txtHeader:TextExended = new TextExended(); 
+      private var _headerControl:HeaderControl;
+
+      private var stringForAnswerWillVaryViewControl:String;
+      private var _parentControl:Open_endedWritingPromptControl;
+      
+      private var _isDrawingAreaUsing:Boolean = false;
+
+
+      /**
+      * Private methods
+      */
+      private function InitStateText():void
+      {
+        if (currentState != state_edit_keybord)
+        {  
+           currentState = state_edit_keybord;
+           ActivityControl.isDrawingAreaUsing = false;
+        }
+      }
+    
+      private function InitStateDrow():void
+      {
+        if (_parentControl != null)
+        {
+            currentState = state_drow
+            drawingArea.pencil = true;
+            ActivityControl.isDrawingAreaUsing = true;
+        }
+      }
+
+      private function buildStringForAnswerWillVaryViewControl():void
+      {
+        stringForAnswerWillVaryViewControl = "";
+
+        //Пробегаем по всем возможным ответам и сверяем их с текстом который ввел пользователь
+        for each (var item:Object in this._answersWariant)
+        {
+          if (item is VariantORAnswer)
+          {
+//            //Сравниваем строки в нижнем регистре и с удалеными пробелами
+//            if(FactoryRegExp.NormalazeString((item as VariantORAnswer).text.toLowerCase()) != FactoryRegExp.NormalazeString(this.txtArea.text.toString().toLowerCase()))
+              stringForAnswerWillVaryViewControl += (item as VariantORAnswer).text +', ';
+          }
+        }
+
+        stringForAnswerWillVaryViewControl = stringForAnswerWillVaryViewControl.replace(new RegExp(',\\s*?$','g'),'');
+      }
+      
+      private function click_btnText(event:MouseEvent):void
+      {
+        InitStateText();
+      }
+      
+      private function click_btnDrow(event:MouseEvent):void
+      {
+        InitStateDrow();
+      }
+      
+     private function click_btnLastic(event:MouseEvent):void
+     {
+       drawingArea.lastic = true;
+     }
+      
+
+      /**
+      * Events handler
+      */
+      private function Clik_btnShowHandler(event:MouseEvent):void
+      {
+        this.btnShow.visible = false;
+        
+        // поправляем ширину подсказки как нам нужно (что бы кнопочки совпадали:)
+        var position:Point = boxContent.localToGlobal(new Point());
+        var diffWidth:Number = (btnShow.x + btnShow.width) - boxContent.width;
+        answerWillWaryControl = AnswerWillVaryViewControl.Show(boxContent, stringForAnswerWillVaryViewControl, boxContent.localToGlobal(new Point()),this._fontName,this._fontSize,this._fontColor, diffWidth);
+        QuizControl.instance.hideCanvas.visible = true;
+        answerWillWaryControl.addEventListener(AnswerWillVaryViewControlEvent.ANSWER_WILL_VARY_EVENT, WillVaryEventHandler);
+      }
+
+      private function WillVaryEventHandler(event:AnswerWillVaryViewControlEvent):void
+      {
+         QuizControl.instance.hideCanvas.visible = false;
+         this.btnShow.visible = true;
+         answerWillWaryControl.removeEventListener(AnswerWillVaryViewControlEvent.ANSWER_WILL_VARY_EVENT, WillVaryEventHandler);
+      }
+
+      //Расчитываем длину контрола когда он будет создан чтоб были доступны глобальные координаты
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+        removeEventListener(FlexEvent.CREATION_COMPLETE, creationCompleteHandler);
+        var delegate:Function = function():void 
+        { 
+          trace("[handler]"); 
+//          _customInvalidateSize = true; 
+          invalidateSize(); 
+          invalidateDisplayList();
+        };
+        ActivityControl.instance.addEventListener("customInvalidateSize", delegate);
+        
+        // Устанавливаем размер поля для ввода если она по причине не готовности контрола не было зделано
+        txtArea.height = _txtHeader.measureText("A").height * 4;
+
+        if (ActivityControl.userType == EMUserTypes.EM_Teacher)
+        {
+          if (ActivityControl.isDrawingAreaUsing)
+          {
+            currentState = state_drow;
+            keyboard.stateDrowActive = true;
+          }
+          else
+            currentState = state_edit_keybord
+
+          keyboard.btnText.addEventListener(MouseEvent.CLICK, click_btnText);
+          keyboard.btnDrow.addEventListener(MouseEvent.CLICK, click_btnDrow);
+          keyboard.btnLastic.addEventListener(MouseEvent.CLICK, click_btnLastic);
+        }
+        else
+          currentState = state_edit
+      }
+
+      private function enterState_stateAnswersWillVaryHandler(event:FlexEvent):void
+      {
+        if (stringForAnswerWillVaryViewControl == "" && !_isDrawingAreaUsing)
+          currentState = state_text;
+      }
+      
+    
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      
+//      private var _customInvalidateSize:Boolean;
+      protected override function measure():void
+      {
+        super.measure();
+//        if(_customInvalidateSize)
+//        {
+//          width = ActivityControl.instance.calculateChildWidth(this);
+//          _customInvalidateSize = false;
+//        }
+        width = ActivityControl.instance.calculateChildWidth(this);
+      }
+      
+      public override function FontName():void
+      {
+        _txtHeader.setStyle("fontFamily",_fontName);
+        txtArea.setStyle("fontFamily", _fontName);
+      }
+
+      public override function FontSize():void
+      {
+        if (_prompt && _prompt.relatedPromptID == 0)
+          _txtHeader.setStyle("fontSize", _fontSize + Preferences.parentPromptFontSizeShift);
+        else
+          _txtHeader.setStyle("fontSize", _fontSize);
+
+        txtArea.setStyle("fontSize", _fontSize);
+        if (_txtHeader.isCreationComplete)
+            txtArea.height = _txtHeader.measureText("A").height * 4;
+      }
+
+      public override function FontColor():void
+      {
+        _txtHeader.setStyle("color", _fontColor);
+        txtArea.setStyle("color", _fontColor);
+   
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (ActivityControl.isCheckAnswer == false)
+          return true;
+        if (ActivityControl.isDrawingAreaUsing)
+            return true;
+        if (FactoryRegExp.trim(txtArea.text) == "")
+          return false;
+        return true;
+      }
+      
+      public override function Init(prompt:IBasePrompt):void
+      {
+        _prompt = prompt as Prompt;
+        _txtHeader.htmlText = FactoryRegExp.trim(_prompt.text);
+        _txtHeader.htmlText = _txtHeader.htmlText.replace(new RegExp("(SIZE\\s*?=\\s*?\"[0-9]+\")", 'g'), '');
+        _txtHeader.percentWidth = 100;
+
+        if ((prompt as Open_endedWritingPrompt).variantOrAnswerContainer != null)
+          this._answersWariant = (prompt as Open_endedWritingPrompt).variantOrAnswerContainer.ChildAnswers();
+        //Устанавливаем более меньший шрифт если контрорлд пренадлежит Активити дирекшион
+        if ((_prompt as Open_endedWritingPrompt).isParentActivityID == true)
+          _txtHeader.setStyle("fontSize", this._fontSize - 2);
+
+        vBox.addChildAt(_txtHeader, 0);
+      }
+
+
+      public override function GetText():String
+      {
+        return txtArea.text;
+      }
+
+      public override function Continue():void
+      {
+        buildStringForAnswerWillVaryViewControl();
+        
+        var hasAnswersWariant:Boolean = _answersWariant.length != 0;
+        if (ActivityControl.isDrawingAreaUsing)
+          currentState = hasAnswersWariant ? state_answers_will_vary_with_DrawingArea : state_correct_with_DrawingArea;
+        else
+          currentState = hasAnswersWariant ? state_answers_will_vary : state_text;
+      }
+
+      public override function SetCorrect():void
+      {
+      }
+
+      public override function SetIncorrect():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+        _txtHeader.setStyle("fontFamily", "Futura");
+        txtArea.setStyle("fontFamily", "EMComic");
+      }
+
+      //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+         this._prompt.result = txtArea.text;
+      }
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+         txtArea.text =  this._prompt.result;
+         if (needCheckAnswer)
+              currentState = state_text;
+      }
+      
+      /**
+      * Public members/properties
+      */
+       public function set parentControl(control:Open_endedWritingPromptControl):void
+       {
+         _parentControl = control;
+       }
+        
+   
+      /**
+      * Public methods
+      */
+
+
+    ]]>
+  </mx:Script>
+  <transitions>
+    <mx:Transition fromState="{state_edit}" toState="*">
+      <mx:Parallel id="showPromptEffect" target="{vBox}">
+        <mx:Resize duration="300" heightFrom="0" id="showResizeEffect"/>
+        <mx:Sequence>
+          <mx:Blur duration="200" blurYFrom="1.0" blurYTo="20.0"/>
+          <mx:Blur duration="200" blurYFrom="20.0" blurYTo="1"/>
+        </mx:Sequence>
+      </mx:Parallel>
+    </mx:Transition>
+  </transitions>
+
+ 
+
+  <states>
+    <mx:State name="{state_edit}">
+      <mx:AddChild relativeTo="{boxContent}" creationPolicy="all">
+        <mx:TextArea id="txtArea"  horizontalScrollPolicy="off" styleName="listVerticalScrollBar" fontWeight="normal" width="100%" /> 
+      </mx:AddChild>
+    </mx:State>
+
+    <mx:State name="{state_text}" basedOn="{state_edit}">
+      <!--  <mx:AddChild relativeTo="{boxContent}" creationPolicy="all">
+      <mx:Text id="txtFull" selectable="false" htmlText="{FactoryRegExp.trim(txtArea.htmlText)}" width="100%" fontWeight="normal"/> 
+      </mx:AddChild>-->
+        <mx:SetProperty  target="{txtArea}" name="editable" value="false"/>
+        <mx:SetProperty  target="{txtArea}" name="selectable" value="false"/>
+        <mx:SetProperty  target="{txtArea}" name="height" value="200"/> 
+    </mx:State>
+    
+    <mx:State name="{state_edit_keybord}" basedOn="{state_edit}">
+      <mx:AddChild relativeTo="{boxContent}" creationPolicy="all">
+       <ns1:Keyboard id="keyboard" />
+      </mx:AddChild>
+      <mx:SetStyle  target="{boxContent}" name="verticalAlign"  value="top"/> 
+    </mx:State>
+    
+    <mx:State name="{state_drow}" basedOn="{state_edit_keybord}">
+      <mx:RemoveChild target="{txtArea}" />
+      <mx:AddChild relativeTo="{boxContent}" creationPolicy="all" position="firstChild">
+            <ns1:DrawingArea id="drawingArea" width="100%" height="200" borderStyle="solid" borderColor="0x5CC0FF" borderThickness="2" />  
+      </mx:AddChild>
+    </mx:State>
+     
+    <mx:State name="{state_correct_with_DrawingArea}" basedOn="{state_drow}">
+        <mx:SetProperty  target="{drawingArea}" name="activeDrawingArea" value="false"/>
+        <mx:RemoveChild target="{keyboard}" />
+    </mx:State>
+    
+
+    <mx:State name="{state_answers_will_vary}" basedOn="{state_text}" enterState="enterState_stateAnswersWillVaryHandler(event)">
+      <mx:AddChild relativeTo="{boxContent}" creationPolicy="all">
+        <mx:Button id="btnShow" verticalCenter="0" click="Clik_btnShowHandler(event)"  styleName="ButtonHideDefinition" /> 
+      </mx:AddChild>
+      <mx:SetStyle  target="{boxContent}" name="verticalAlign"  value="middle"/> 
+    </mx:State>
+    
+    <mx:State name="{state_answers_will_vary_with_DrawingArea}" basedOn="{state_answers_will_vary}">
+        <mx:AddChild  relativeTo="{boxContent}" creationPolicy="all" target="{drawingArea}" position="firstChild" />
+        <mx:SetStyle target="{boxContent}" name="verticalAlign" value="middle" />
+        <mx:SetProperty  target="{boxContent}" name="width" value="100%"/>  
+        <mx:SetProperty  target="{drawingArea}" name="activeDrawingArea" value="false"/>  
+        <mx:RemoveChild target="{txtArea}" />
+    </mx:State>
+  </states>
+
+  <mx:VBox id="vBox" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="100%" >
+  <!-- Надо что б поле txtHeader имело width иначе будут пропадать последнии слова в предложении-->
+    <mx:HBox id="boxContent" width="100%"  verticalScrollPolicy="off" horizontalScrollPolicy="off"  horizontalGap="2"
+      paddingBottom="1" paddingTop="1" paddingLeft="1"  />
+  </mx:VBox>
+</BaseUIControl>

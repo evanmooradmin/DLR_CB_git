@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="290" height="508"
+  backgroundImage="@Embed(source='style/images/AboutWindow/bkg.jpg')"
+  creationComplete="CreationComplete(event)" backgroundColor="#FFFFFF" borderStyle="solid" borderColor="#A5A6A8" cornerRadius="0">
+
+  <mx:Script>
+    <![CDATA[
+      import Model.EmbededData;
+      import mx.containers.Tile;
+     // import org.alivepdf.viewing.Title;
+      import mx.core.Application;
+      import mx.managers.CursorManager;
+      import mx.managers.PopUpManager;
+      import mx.core.UIComponent;
+      import mx.events.FlexEvent;
+
+      private var _fingerIcon:Class = EmbededData.inctance.fingerIcon;
+
+      private var cursorID:int;
+
+      private var _parent:UIComponent;
+
+      public static function Show(parent:UIComponent, version:String):void
+      {
+        var aboutWindow:AboutWindow = new AboutWindow();
+
+        PopUpManager.addPopUp(aboutWindow, parent, true);
+        PopUpManager.centerPopUp(aboutWindow);
+
+        aboutWindow.lbVersion.text = "Version: " + version;
+        aboutWindow.Parent = parent;
+      }
+
+      private function CreationComplete(event:FlexEvent):void
+      {
+        txtContent.htmlText = "PROJECT DIRECTOR: Keli Winters<br/><br/>" +
+                              "PROJECT MANAGER: Konstantin Sashchuk<br/><br/>" +
+                              "PROJECT COORDINATOR: Vlad Shrubek<br/><br/>" +
+                              "APPLICATION DEVELOPMENT: Evgeniy Velikiy, Sergey Ruban<br/><br/>" +
+                              "DESIGN: Irina Cherbina<br/><br/>" +
+                              "EDITORIAL CONTENT SUPPORT AND COPY-EDIT:  Marilyn Evans, Michele Nizza, Joanie Sherlock<br/><br/>" +
+                              "UPDATE AUTOMATION: Evan Lynch<br/><br/>" +
+                              "QUALITY ASSURANCE, PACKAGING and INSTALLATION: " +
+                              "Bret Bailey, Matthew Warren<br/><br/>" +
+
+                              "Copyright © 2010, Evan-Moor Corp.  All rights reserved.";
+
+
+      }
+
+      private function Click_btnClose(event:MouseEvent):void
+      {
+        PopUpManager.removePopUp(this);
+      }
+
+      private function MouseOver_btnClose(event:MouseEvent):void
+      {
+        cursorID = CursorManager.setCursor(_fingerIcon);
+      }
+
+      private function MouseOut_btnClose(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(cursorID);
+      }
+
+      public function set Parent(value:UIComponent):void
+      {
+        _parent = value;
+      }
+
+      private function Click_lnkBtnViewTerms(event:MouseEvent):void
+      {
+        TermsAndConditionsOfUseWindow.Show(_parent, "With the purchase of electronic materials from Evan-Moor Educational Publishers, you are granted a single-classroom user license which entitles you to use or duplicate these materials for a single classroom (or home) only. Additionally, these electronic materials may be transmitted to others within the community of a single classroom (or home) via a secure intranet, website, electronic bulletin board, FTP site, or newsgroup. Sharing the materials or making copies for additional classrooms or schools or for other individuals is prohibited. Use of the materials for anything other than classroom instruction is a violation of Evan-Moor Educational Publishers' intellectual property rights. Evan-Moor Corporation retains full intellectual property rights on all its products, and these rights extend to electronic editions of complete books and individual teaching activities offered for sale in digital format.<br/><br/>" +
+
+"If you would like to use Evan-Moor software for additional purposes not outlined in the single-classroom license (described above), please submit an Application to Use Copyrighted Materials form by fax or mail to Evan-Moor Educational Publishers, Attn: Copyrights.");
+
+      }
+
+    ]]>
+  </mx:Script>
+
+  <mx:Text x="10" y="140" width="270" height="276" id="txtContent" fontSize="9" fontFamily="Arial" selectable="false" color="#000000" fontWeight="bold"/>
+  <mx:Label x="10" y="115" width="270" fontSize="9" fontFamily="Arial" fontWeight="bold" selectable="false" id="lbVersion" color="#A5A6A8"/>
+  <mx:Label x="10" y="82" text="{Application.application.Titile}" fontSize="16" fontWeight="bold" color="#000000" width="270" fontFamily="Arial"/>
+  <mx:Image x="10" y="10" source="{Application.application.iconApp}" width="64" height="64"/>
+  <mx:Image x="10" y="424" source="{EmbededData.inctance.logo}" width="100" height="42"/>
+  <mx:Button x="230" y="10" styleName="CloseAbout" id="btnClose" width="48" click="Click_btnClose(event)"
+    mouseOver="MouseOver_btnClose(event)" mouseOut="MouseOut_btnClose(event)" height="20"/>
+  <mx:LinkButton x="10" y="474" label="View Terms and Conditions of Use" id="lnkBtnViewTerms" click="Click_lnkBtnViewTerms(event)"
+    color="#2002FF" themeColor="#FFFFFF" alpha="1.0" textDecoration="underline"/>
+</mx:Canvas>

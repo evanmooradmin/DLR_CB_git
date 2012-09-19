@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="999" height="650"
+    implements="interfaces.em.IEMControlling, interfaces.em.progress.IProgress" xmlns:Controls="Controls.*">
+
+  <mx:Script>
+    <![CDATA[
+      import interfaces.em.EMModuleTypeEvent;
+      import interfaces.model.ISection;
+      import interfaces.model.IUnit;
+      import mx.events.FlexEvent;
+      import Model.EmbededData;
+      import security.SQLiteStore;
+      import generated.ArrayOfString;
+      import generated.UpdateCheckResultEvent;
+      import mx.managers.PopUpManager;
+      import events.ActivityControlEvent;
+      import interfaces.model.IActivity;
+      import Controls.ActivityControl;
+      import interfaces.em.EMUserTypes;
+      import Model.Unit;
+      import Model.Section;
+      import Model.Activity;
+      import interfaces.em.progress.Progress;
+      import Model.Emc;
+      import generated.WebService;
+      import Model.Version;
+      import Model.Security.EmcMapAndVersion;
+      import Model.Security.Licence; 
+      import Model.Preferences;
+      import Controls.Windows.LicenceWindow;
+      import mx.rpc.AsyncToken;
+      import interfaces.em.EMModuleParceEvent;
+      import Model.Security.LocalStore;
+      import Controls.Windows.AlertWindow;
+      import Controls.Windows.WaitWindow;
+      import mx.core.Application;
+      import Model.Events.QuizEvent;
+      import mx.rpc.events.FaultEvent;
+      import generated.GetFileResultEvent;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     modules\DailyParagraph2Module.mxml
+      *
+      *  Abstract:
+      *     Модуль для работы с Daily Language Review 1
+      *
+      *  Author:
+      *     Evgenij Welikij   9-August-2010
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      private var _currentModuleVersion:String = "1.0";   // текущая версия модуля
+      private var _currentXMLVersion:String = "";         // текущая версия XML
+
+      private var _preferences:Preferences = new Preferences();
+      private var _activity:Activity;
+      private var _userTypes:EMUserTypes;
+      private var _activityXML:XML; 
+      private var _isCallCheckAnswer:Boolean = false;
+      
+      // объект для работы с лицензией
+      private var _licence:Licence;
+      private var _emcMap:EmcMapAndVersion = EmcMapAndVersion.SetCurrentMap(8);
+      private var _emcID:int = _emcMap.emcID;
+      private var _moduleVersion:Version;
+      //Пройден ли урок или нет.  Если вызываеться метод Done то урок считаеться пройденным
+      private var _isCompleteLesson:Boolean = false;
+      private var _isTrial:Boolean = false;
+      private var _appID:int = 8;
+
+      private var _waitWindow:WaitWindow;
+
+      // для работы с веб-службой
+      private var _webService:WebService = new WebService();
+      private var _password:String = "mEQaspu44crAb4Asubraz";
+      private var _preferencesXML:XML;
+      private var _isPreferencesChanged:Boolean = false;
+      //Был ли вызван метод startActivity
+      private var _isStartActivity:Boolean = false;
+      //Был ли создан QuizControl
+      private var _isCreationCompleteQuizControl:Boolean = false;
+    
+      private var _emc:Emc = new Emc();
+      
+      private var _allUnits:Array = [];                // все недели этого модуля (даже те которые не входят в триальную версию)
+      
+
+      /**
+      * Private methods
+      */
+      //Метод запускаеться из clientBrowser и запускает парсинг xml
+      private function initializeLoadXML(isTrial:Boolean):void
+      { 
+        _isTrial = isTrial;
+        _moduleVersion = new Version(_currentModuleVersion);
+        EmcMapAndVersion.isTrial = _isTrial;
+        //Загружаем XML 
+        loadXML();
+      }
+      
+      //Метод загружает в модель данные студента
+      private function InitData(activityXML:XML):void
+      {
+        if (activityXML != null)
+        {
+            //Заполняем модель данными пользователя
+             deserializeActivity(_activity, activityXML)
+             //Если урок пройден то не только загружаем данные в контролы а и вызываем CheckAnswer у контролов 
+             if (isLessonComplete(activityXML))
+                 _isCallCheckAnswer = true;
+             quizControl.activityControl.LoadReport(_isCallCheckAnswer);
+           }  
+      }
+      
+     //Метод грузит XML в зависимости от ситуации либо с сервера либо локально
+      private function loadXML():void
+      {
+        try                                                                
+        {
+          //Зaгружаем XML из хранилеща
+        	var xmlLocal:XML = SQLiteStore.instance.LoadBook(); 
+          //Если XML нет то добовляем в хранилище
+          if (!xmlLocal)
+          {
+              var xmlEmbeded:XML = EmbededData.inctance.getXML(_appID);
+              //Сохраняем заэмбеженую XML в хранилище
+              SQLiteStore.instance.SaveBook(xmlLocal); 
+              xmlLocal = xmlEmbeded;
+          }
+          dispatchEvent(new EMModuleParceEvent(EMModuleParceEvent.PARCE_START, true));
+          // парсим и получаем все недели
+          parseUnits(xmlLocal);
+          //Парсим XML в модель
+          _emc.Load(xmlLocal);
+          _currentXMLVersion = _emc.version;
+       
+        }
+        catch(err:Error)
+        {
+          AlertWindow.Show(Application.application as Application, "OOPS!", err.message);
+        }
+          //Получаем версию XML с сервера
+       // if (!EmcMapAndVersion.isTrial)
+       //    UpdateCheck();
+      
+       dispatchEvent(new EMModuleParceEvent(EMModuleParceEvent.PARCE_COMPLETE, true));
+      }     
+      
+      // метод парсит и создает не триальные юниты
+      private function parseUnits(xml:XML):void
+      {
+        _allUnits = [];
+        for each (var unitNode:XML in xml.children())
+        {
+          _allUnits.push(new Unit(unitNode.@unitID, unitNode.@name, unitNode.@title, unitNode.@relatedEMCId, _emc));
+        }        
+      } 
+      
+      //Метод проверяет обновления и возвращает версию xml с сервера
+      private function UpdateCheck():void
+      {
+        if (EmcMapAndVersion.isTrial == false)
+        {
+          var token:AsyncToken;
+          _webService.addupdateCheckEventListener(UpdateCheckComplete_webServiceHandler);
+          token = _webService.updateCheck(String(_emcID), "", _password);
+          token.addEventListener(FaultEvent.FAULT, UpdateCheckFault_webServiceHandler);
+
+        //  _waitWindow = WaitWindow.Show(Application.application as Application, "Updating content");
+        }
+      }
+    
+      //Метод грузит XML с сервера 
+      private function loadXMLForServer():void
+      {
+        var token:AsyncToken;
+
+        _waitWindow = WaitWindow.Show(Application.application as Application, "Updaiting content");
+        _webService.addgetFileEventListener(getXMLFile_webServiceHandler);
+        token = _webService.getFile(_emcID.toString(), "", _password);
+        token.addEventListener(FaultEvent.FAULT, faultGetXMLFile_webServiceHandler);
+      }
+      
+       //Метод срабатывает в случае успешного UpdateCheck
+      private function UpdateCheckComplete_webServiceHandler(event:UpdateCheckResultEvent):void
+      {
+        var token:AsyncToken;
+ 
+      //  WaitWindow.Hide(_waitWindow);
+     
+        if (event.result != null)
+        {
+         var xmlVersion:String = ((event.result as ArrayOfString)[2] as String).substr(11);
+         //Сверяем версии XML с сервера и локальной и если версия XML с сервера больше загружаем ее с сервера
+         if (Version.VersionCMP(xmlVersion, _currentXMLVersion) > 0)
+             loadXMLForServer();
+        }
+      }
+     
+     //Метод срабатывает в случае провала UpdateCheck
+      private function UpdateCheckFault_webServiceHandler(event:FaultEvent):void
+      {
+        WaitWindow.Hide(_waitWindow);
+        //AlertWindow.Show(this, "OOPS!", "Unable to connect the server");
+      }
+      
+      //Метод срабатывает в случае успешной загрузки XML с сервера
+      private function getXMLFile_webServiceHandler(event:GetFileResultEvent):void
+      {
+        if (event.result)
+        {
+          //Получаем новую XML 
+          var xml:XML = XML(event.result.readUTFBytes(event.result.length));
+          _emc = new Emc();
+          dispatchEvent(new EMModuleParceEvent(EMModuleParceEvent.PARCE_START, true));
+          //Парсим в модель 
+          _emc.Load(xml);
+          
+          dispatchEvent(new EMModuleParceEvent(EMModuleParceEvent.PARCE_COMPLETE, true));
+   
+          SQLiteStore.instance.SaveBook(xml); 
+          _currentXMLVersion = _emc.version;
+        }
+        WaitWindow.Hide(_waitWindow);
+      }
+      
+      //Метод срабатывает в случае провала загрузки XML с сервера
+      private function faultGetXMLFile_webServiceHandler(event:FaultEvent):void
+      {
+        WaitWindow.Hide(_waitWindow);
+        AlertWindow.Show(Application.application as Application, "OOPS!", "Error get XML-file");
+      }
+      
+      
+      
+      
+      //Метод парсит activityXML и производлит десереализацию и возвращает пройдена ли он или нет
+      private function deserializeActivity(activity:IActivity, activityXML:XML):void
+      {
+        if (activityXML.name() == "Activity")
+        {    
+          //Если встретили обычную активити 
+          (activity as Activity).deserialize(activityXML);
+        }
+        else 
+          //Проходим по дереву XML
+          for each (var chaild:XML in activityXML.children())
+                     deserializeActivity(activity, chaild);
+      }
+      
+      //Парсит XML  и возвращает true если хоть одни параметр  complete == true
+      private function isLessonComplete(xml:XML):Boolean
+      {
+        if (xml.@complete == "true")
+            return true;            
+        for each (var chaild:XML in xml.children())  
+        {
+            if (chaild.@complete == "true")
+                return true;   
+            if (isLessonComplete(chaild))
+                return true
+        }
+                  
+       return false      
+      }
+      
+      
+      private function quizControl_completeActivityHandler(event:ActivityControlEvent):void
+      {
+        currentState = "";
+        (event.activity as Activity).date = new Date();
+      }
+	  
+	  private function Close(event:ActivityControlEvent):void
+      {
+         _emc.SaveResults();
+        //Кидаем событие о том что модуль надо закрыть и передаем текущую активити
+        dispatchEvent(new ActivityControlEvent(ActivityControlEvent.DONE, _activity as IActivity));
+      } 	
+
+      private function InitQuizControl(activity:Activity, preferences:Preferences, userTypes:EMUserTypes):void
+      {
+            quizControl.Init(activity, preferences, userTypes);
+             //Событие кидаеться при закрытии модуля из ActivityControlEvent
+             if (!quizControl.hasEventListener(ActivityControlEvent.DONE))
+                  quizControl.addEventListener(ActivityControlEvent.DONE, Close); 
+      }
+  
+      /**
+      * Initialization 
+      */
+      private function CreationComplete_quizControl(event:FlexEvent):void
+      {
+        _isCreationCompleteQuizControl = true;
+        if (_isStartActivity)
+        {
+            InitQuizControl(_activity, _preferences, _userTypes);
+            InitData(_activityXML); 
+        }
+      }
+
+      /**
+      * Constructor 
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+      protected override function createChildren():void
+      {
+        dispatchEvent(new EMModuleTypeEvent(EMModuleTypeEvent.MODULE_TYPE_EVENT, initializeLoadXML));
+        super.createChildren();  
+      }
+      
+      protected override function commitProperties():void
+      {
+        if (_isPreferencesChanged)
+        {
+           _isPreferencesChanged = false;
+           if (_preferences != null)
+               _preferences.Load(_preferencesXML);
+                
+        }
+        super.commitProperties();
+      }
+      
+      /**
+      * Public members/properties
+      */
+      public function get units():Array
+      {
+        if (_emc)
+          return _emc.units;
+        return null;
+      }
+
+    
+      public function get majorVersion():int
+      {
+        return _moduleVersion.major;
+      }
+
+      public function get minorVersion():int
+      {
+        return _moduleVersion.minor;
+      }
+
+      public function get isTrial():Boolean
+      {
+        return EmcMapAndVersion.isTrial;
+      }
+
+      public function get progress():Progress
+      {
+        return _emc.progress;
+      }
+      
+//      public function get currentActivity():Object
+//      {
+//        return 
+//      }
+      public function get applicationEmcID():int
+      {
+       return EmcMapAndVersion.currentMap.emcID;
+      }       
+	  
+	  public function get productEmcID():int
+	  {
+	    if (_isTrial)
+	        return 3104;
+	  	return 3105;
+	  }
+	  
+	    public function get allUnits():Array
+      {
+        return _allUnits;
+      }
+      
+      
+      /**
+      * Public methods
+      */
+     public function get preferences():XML
+      {
+        if (_preferences != null)
+            return _preferences.Save();
+      return null     
+      }
+      
+      public function set preferences(xml:XML):void
+      {
+         if (_preferences != null && xml)
+             _preferences.Load(xml);
+         else 
+         {
+            _isPreferencesChanged = true;
+            _preferencesXML = xml;
+            invalidateProperties();
+        }   
+      }  
+      
+      
+      public function startActivity(activity:IActivity, userTypes:EMUserTypes, activityXML:XML = null, needCheckAnswer:Boolean = false):void
+      {
+        _isCallCheckAnswer = needCheckAnswer;
+         _userTypes = userTypes;
+      
+        if (activity is Activity)
+        {
+          _activity = activity as Activity;
+       
+          _isStartActivity = true;
+          _activityXML = activityXML;
+      	  _isCallCheckAnswer = needCheckAnswer;		    
+          if (_isCreationCompleteQuizControl)
+          {
+              InitQuizControl(_activity, _preferences, _userTypes); 
+      		  InitData(activityXML);
+          }
+          
+         }
+       }
+      
+      //Метод возвращает серелизированую активити  
+      public function done(activity:Object):XML
+      {
+        var xml:XML = <Progress />;
+        if (activity is Activity)
+        {
+           (activity as Activity).date = new Date(); 
+            var activityXML:XML = (activity as Activity).serialize();
+            _isCompleteLesson = true;
+            //Помечаем xml как пройденную
+            activityXML.@complete = "true";
+            xml.appendChild(activityXML);
+            xml.appendChild(<Score total={quizControl.activityControl.totalCountPromptControls} value={quizControl.activityControl.CountOfCompletePrompts()}/>);
+            return xml;
+        }   
+        else return null;    
+      }
+      
+      //Метод возвращает серелизированую активити  h
+      public function report(activity:Object):XML
+      {
+        var xml:XML = <Progress />;
+        if (activity is Activity)
+        {
+           //Сохраняем в модель балы учителя
+            quizControl.SaveScore(); 
+            var activityXML:XML = (activity as Activity).serialize();
+           //Помечаем xml как пройденную не доконца
+            activityXML.@complete = _isCompleteLesson.toString();
+            xml.appendChild(activityXML);
+            xml.appendChild(quizControl.score); 
+            return xml;
+        }   
+        else return new XML();  
+      }
+      
+      public function loadReport(needCheckAnswer:Boolean = false):void
+      {
+              
+      }
+      
+      public function getLessonsForUnit(unitObj:*):Array
+      {
+        var lessons:Array = [];
+        if (unitObj is IUnit)
+        {
+           var unit:IUnit = (unitObj as IUnit);
+                
+            for each (var section:ISection in unit.sections)
+            {
+              lessons = lessons.concat(section.activities);
+            }
+        }
+        return lessons;
+      }
+
+      public function getActivitiesForLesson(lesson:*):Array
+      {
+        return [lesson];
+      }
+      
+      //Метод вызываеться для сохранения результатов студента
+      public function unload():void
+      {
+        quizControl.activityControl.SaveData();
+      }
+      
+      public function isCompleteAllControls():Boolean
+      {
+        return quizControl.activityControl.isAllControlComplete();
+      }
+      
+      public function getActivityByID(activityID:String):IActivity
+      {
+        for each (var item:Activity in _emc.activityes)
+        {
+          if (item.ID == activityID)
+          {
+            return item;
+          }
+        }
+        return null;
+      }
+      
+      public function getAssignedActivityForLesson(lesson:*):Array
+      {
+        return getActivitiesForLesson(lesson);
+      }
+      
+    public function fitToFullScreen():void
+    {
+      quizControl.fitToFullScreen();  
+    }
+  
+    public function fitToDefaultScreen():void
+    {
+      quizControl.fitToDefaultScreen();  
+    }
+    
+    
+        public function serialize():XML
+    {
+     return _emc.serialize();
+    }
+    
+    public function deserialize(xml:XML):void
+    {
+      if (xml)
+         _emc.deserialize(xml);	
+    }
+    
+    public function clean():void
+    {
+      for each (var activity:Activity in _emc.activityes)
+      			activity.date = null;		
+    }				
+    
+    public function get activities():Array
+    {
+      return _emc.activityes;
+    }  
+      
+    ]]>
+  </mx:Script>
+  <mx:Style source="style/style_DLR.css"/>
+  
+  <Controls:QuizControl id="quizControl" width="100%" height="100%" creationPolicy="all" creationComplete="CreationComplete_quizControl(event)"/>
+
+</mx:Module>

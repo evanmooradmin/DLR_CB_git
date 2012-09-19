@@ -1,0 +1,848 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+  verticalScrollPolicy="off" horizontalScrollPolicy="off"
+  initialize="Initialize(event)" xmlns:ns1="Controls.PromptControls.*"
+  creationComplete="CreationCompleteHandler(event)" xmlns:ns2="Controls.*"
+  close="CloseHandler(event)" currentState="{state_main}"
+  >
+
+  <mx:Script>
+    <![CDATA[
+      import mx.containers.accordionClasses.AccordionHeader;
+      import mx.core.UIComponent;
+      import mx.managers.CursorManager;
+      import Model.EmbededData;
+      import mx.controls.Alert;
+      import Controls.Windows.LinkWindow;
+      import generated.ResetDownloadResultEvent;
+      import Controls.Windows.YNWindow;
+      import generated.ArrayOfString;
+      import generated.UpdateCheckResultEvent;
+      import Controls.Windows.AlertWindow;
+      import mx.rpc.events.FaultEvent;
+      import generated.GetFileResultEvent;
+      import Controls.Windows.WaitWindow;
+      import mx.rpc.AsyncToken;
+      import generated.WebService;
+      import Controls.Windows.LicenceWindow;
+      import Model.Security.Licence;
+      import Model.Security.EmcMapAndVersion;
+      import Model.Version;
+      import mx.states.State;
+      import Model.Prompts.Matching;
+      import flash.net.navigateToURL;
+      import Controls.Windows.PdfWindow;
+      import Model.ScreenSize;
+      import mx.core.Application;
+      import Controls.Printing.FormPrintView;
+      import mx.printing.FlexPrintJob;
+      import Controls.Windows.AboutWindow;
+      import Controls.ItemRenderers.LessonHistoryLinkButton;
+      import mx.collections.ArrayCollection;
+      import Model.Security.LocalStore;
+      import mx.formatters.DateBase;
+      import Model.Events.ActivityControlEvent;
+      import Controls.Windows.PreferencesWindow;
+      import mx.events.MenuEvent;
+      import mx.controls.Menu;
+      import Model.Preferences;
+      import mx.events.ListEvent;
+      import Model.Prompts.Prompt;
+      import Model.Activity;
+      import Model.Section;
+      import Model.Unit;
+      import Model.Emc;
+      import mx.events.FlexEvent;
+
+
+      /***************************************************************
+      *
+      *  Module Name:
+      *     DailyLanguageReview.mxml
+      *
+      *  Abstract:
+      *     This is main form component
+      *
+      *  Author:
+      *     Evgenij Welikij   14-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+      // TODO двинуть Рубика, что бы он написал регулярку по удалению BR в конце строки
+
+      /**
+      * Static
+      */
+      public static const state_main:String = "state_main";
+      public static const state_quiz:String = "state_quiz";
+
+
+      /**
+      * Private members/properties
+      */
+      [Bindable]
+      private var aboutMainText:String = "<b>See for yourself why Daily Language Review is used in over 50% of U.S. classrooms! <br/><br/></b> Daily Language Review helps students master basic skills and raise test scores by providing focused practice on grammar, punctuation, usage, and sentence editing skills.";
+
+
+
+      // Accordion icon
+      //////////////////////////////////////////////////////////
+      [Embed(source="style/images/mainPage/Accordion/01.png")]
+      [Bindable]
+      private var iconBeginLesson:Class;
+
+      [Embed(source="style/images/mainPage/Accordion/02.png")]
+      [Bindable]
+      private var iconLessonHistory:Class;
+
+      [Embed(source="style/images/mainPage/Accordion/03.png")]
+      [Bindable]
+      private var iconAbout:Class;
+
+      // colors
+      private var darkBlueColor:uint = 3046334;
+      private var lightBlueColor:uint = 14017267;
+      private var textBeginLessonColor:uint = 1092066;
+      private var textLessonHistoryColor:uint = 15532172;
+      private var textAboutColor:uint = 16763400;
+
+      private var _emc:Emc = new Emc();
+      private var _preferences:Preferences;
+
+      // версии xml и app
+      private var _currentXMLVersion:String;
+      private var _currentAPPVersion:String;
+
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      private var _emcID:int = EmcMapAndVersion.SetCurrentMap(2).emcID;
+      //Номер картинки для приложения
+      private var _numberImage:int = 2;
+      //Активировать триальную версию
+      private var _isTrial:Boolean = true;
+      //Активировать лицензию
+      private var _isLicenceActive:Boolean = true;
+      ///////////////////////////////////////////////////////////////////////////////////////////////
+      [Bindable]
+      private var _numberBkg:String = "style/images/mainPage/bkg2.jpg";
+
+
+      // для работы с лицензией
+      private var _licence:Licence;
+      private var password:String = "mEQaspu44crAb4Asubraz";
+      private var _xmlType:String = "xml";
+      private var _airType:String = "air";
+      private var _service:WebService = new WebService();
+
+      private var waitWindow:WaitWindow;
+
+      [Bindable]
+      private var lessonHistoryDataProvider:ArrayCollection
+
+      private var _fingerCursor:Class = EmbededData.inctance.fingerIcon;
+      private var _cursorID:int;
+      private var _cursorAccordionID:int = -1
+
+
+      /**
+      * Private methods
+      */
+                 //grade 1
+ //     private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=142&EmcID=140";
+ //     private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=142&EmcID=145 ";
+                 //grade 2
+    private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=143&EmcID=141";
+    private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=143&EmcID=146";
+                 //grade 3
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=144&EmcID=142";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=144&EmcID=147";
+                 //grade 4
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=145&EmcID=143";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=145&EmcID=148";
+                 //grade 5
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=146&EmcID=144";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=146&EmcID=149";
+                 //grade 6
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=141&EmcID=139";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=141&EmcID=150";
+                 //grade 7
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=775&EmcID=2851";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=775&EmcID=2868";
+                 //grade 8
+  //  private var _linkOtherFormat:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=776&EmcID=2867";
+  //  private var _linkPracticeBooks:String = "http://www.evan-moor.com/Title.aspx?CurriculumID=3&SeriesID=35&TitleID=776&EmcID=2869";
+
+      private var _linkOtherGradeLevels:String = "http://www.evan-moor.com/Series.aspx?CurriculumID=3&SeriesID=35";
+      private var _linkOtherInteractiveApplication:String = "http://www.evan-moor.com/Apps/";
+
+
+      private function PreferencesClose():void
+      {
+        ResizeScreen(_preferences.screenSize);
+        quizControl.ChangePreferences(_preferences);
+      }
+
+      private function ResizeScreen(size:ScreenSize):void
+      {
+        if (width != size.width || height != size.height)
+        {
+          /*centerApplication.xTo = 0;
+          centerApplication.yTo = 0;*/
+
+          this.maxWidth = size.width;
+          this.maxHeight = size.height;
+
+          resizeApplication.widthTo = size.width;
+          resizeApplication.heightTo = size.height;
+          centerAndResizeApplication.play();
+        }
+      }
+
+      private function UpdateLessonHistory():void
+      {
+        var dgArray:Array = new Array();
+        for each (var activity:Activity in _emc.activityes)
+        {
+          var obj:Object = new Object();
+          var objBegin:Object = new Object();
+
+          obj.week = activity.weekAsString;
+          obj.lesson = activity.title;
+          obj.date = activity.dateAsString;
+          obj.begin = objBegin;
+
+          objBegin.activity = activity;
+          objBegin.callBack = ShowQuizControl;
+
+          dgArray.push(obj);
+        }
+
+        lessonHistoryDataProvider = new ArrayCollection(dgArray);
+      }
+
+      // загрузка показ контролла с заданиями
+      private function ShowQuizControl(activity:Activity):void
+      {
+        currentState = state_quiz;
+        quizControl.Init(activity, _preferences);
+      }
+
+      private function FirstTimeAccessed():void
+      {
+        var objChooseAWeek:Object = new Object();
+        objChooseAWeek.title = "Choose a Week";
+        var objChooseALesson:Object = new Object();
+        objChooseALesson.title = "Choose a Lesson";
+
+        _preferences.isFirstTimeAccessed = true;
+        _preferences.lastActivityID = 0;
+
+        var tempArr:Array = new Array();
+        tempArr.push(objChooseAWeek);
+
+        for each (var unit:Unit in _emc.units)
+          tempArr.push(unit);
+
+        comboBoxWeek.dataProvider = tempArr;
+        comboBoxWeek.labelField = "title";
+
+        tempArr = new Array();
+
+        tempArr.push(objChooseALesson);
+
+        comboBoxDay.dataProvider = tempArr;
+        comboBoxDay.enabled = false;
+        btnBegin.enabled = false;
+      }
+
+      // метод выбирает непройденный урок, который идет после указанного
+      private function SelectNextUnfinishedLesson(id:int):void
+      {
+        var nextActivity:Activity = _emc.GetNextUnfinishedActivity(id);
+
+        if (nextActivity != null)
+        {
+          comboBoxWeek.selectedItem = nextActivity.parentSection.parentUnit;
+
+          comboBoxDay.dataProvider = (comboBoxWeek.selectedItem as Unit).activitys;
+          comboBoxDay.labelField = "title";
+          comboBoxDay.selectedItem = nextActivity;
+        }
+      }
+
+      private function CreateLicense(url:String):void
+      {
+        if (this._isLicenceActive == true)
+           LicenceWindow.Show(this, url, ActivateComplete, ActivateFault);
+      }
+
+      private function ActivateComplete(key:String):void
+      {
+        if (this._isLicenceActive == true)
+        {
+          _licence.Activate(key);
+          LoadXML();
+        }
+      }
+
+      private function ActivateFault():void
+      {
+        close();
+      }
+
+      private function LoadXML():void
+      {
+        var token:AsyncToken;
+
+        waitWindow = WaitWindow.Show(this, "Updating content");
+        _service.addgetFileEventListener(getXMLFileComplete);
+        token = _service.getFile(_emcID.toString(), _licence.licenceKey, password);
+        token.addEventListener(FaultEvent.FAULT, GetXMLFileFault);
+      }
+
+      private function LoadApp():void
+      {
+        var token:AsyncToken;
+
+        if (_licence.licenceKey != "")
+        {
+          waitWindow = WaitWindow.Show(this, "Updating content");
+          _service.addresetDownloadEventListener(resetDownloadComplete);
+          token = _service.resetDownload(_licence.licenceKey,
+              EmcMapAndVersion.GetByEmcID(int(_emc.name)).appID.toString(), password);
+          token.addEventListener(FaultEvent.FAULT, resetDownloadFault);
+        }
+      }
+
+      private function UpdateCheck():void
+      {
+        if (_isTrial == false)
+        {
+          var token:AsyncToken;
+          _service.addupdateCheckEventListener(UpdateCheckComplete);
+          token = _service.updateCheck(_emc.name, _licence.licenceKey, password);
+          token.addEventListener(FaultEvent.FAULT, UpdateCheckFault);
+
+          waitWindow = WaitWindow.Show(this, "Updating content");
+        }
+      }
+
+
+      /**
+      * Events handler
+      */
+      private function UpdateCheckComplete(event:UpdateCheckResultEvent):void
+      {
+        WaitWindow.Hide(waitWindow);
+
+        if (event.result != null)
+        {
+          var xmlVersion:String = ((event.result as ArrayOfString)[2] as String).substr(11);
+          var appVersion:String = ((event.result as ArrayOfString)[0] as String).substr(11);
+
+          try
+          {
+            if (Version.VersionCMP(appVersion, _currentAPPVersion) > 0)
+            {
+              YNWindow.Show(this, "Download manger", "A new version of this application is available for download. Would you like to update to the new version?",  LoadApp);
+            }
+            else if (Version.VersionCMP(xmlVersion, _currentXMLVersion) > 0)
+              YNWindow.Show(this, "Download manger", "An update to the content for this application is now available. Would you like to update your existing content?",  LoadXML);
+          }
+          catch (err:Error)
+          {
+            //AlertWindow.Show(this, "Download manger", err.message);
+          }
+        }
+
+      }
+
+      private function UpdateCheckFault(event:FaultEvent):void
+      {
+        WaitWindow.Hide(waitWindow);
+      }
+
+      private function getXMLFileComplete(event:GetFileResultEvent):void
+      {
+        if (event.result != null && event.result is ByteArray)
+        {
+          var data:ByteArray = event.result as ByteArray;
+          var xml:XML = XML(data.readUTFBytes(data.length));
+
+          LocalStore.inctance.SaveBook(xml);
+
+          _emc.Load(xml);
+
+          comboBoxWeek.dataProvider = _emc.units;
+          comboBoxWeek.labelField = "title";
+
+          comboBoxDay.dataProvider = (comboBoxWeek.selectedItem as Unit).activitys;
+          comboBoxDay.labelField = "title";
+
+          if (_preferences.isFirstTimeAccessed == false)
+            SelectNextUnfinishedLesson(_preferences.lastActivityID);
+          else
+            FirstTimeAccessed();
+
+          UpdateLessonHistory()
+
+          ResizeScreen(_preferences.screenSize);
+
+          //smth with update
+          _currentXMLVersion = _emc.version;
+        }
+
+        WaitWindow.Hide(waitWindow);
+      }
+
+      private function GetXMLFileFault(event:FaultEvent):void
+      {
+        WaitWindow.Hide(waitWindow);
+        AlertWindow.Show(this, "OOPS!", "Error get XML-file");
+      }
+
+      private function resetDownloadComplete(event:ResetDownloadResultEvent):void
+      {
+        var result:String = event.result;
+
+        WaitWindow.Hide(waitWindow);
+
+        if (result.indexOf("http") != -1)
+          LinkWindow.Show(this, "Download manger", "Use this link for download app: ", result);
+        else
+          AlertWindow.Show(this, "Download manger", result);
+      }
+
+      private function resetDownloadFault(event:FaultEvent):void
+      {
+        WaitWindow.Hide(waitWindow);
+        AlertWindow.Show(this, "OOPS!", "Unable to connect the server");
+      }
+
+      private function CreationCompleteHandler(event:FlexEvent):void
+      {
+        var appXML:XML = NativeApplication.nativeApplication.applicationDescriptor;
+        var air:Namespace = appXML.namespaceDeclarations()[0];
+
+        _currentAPPVersion = appXML.air::version;
+        var version:Version = new Version(_currentAPPVersion);
+        this.statusBar.height = 0;
+
+        EmcMapAndVersion.isTrial = _isTrial;
+
+        // LocalStore.inctance.Reset();
+        // Вызываем конструктор объекта Preferences в котором проводиться загрузка сохранненых настроек
+        _preferences = new Preferences(this._isLicenceActive);
+       // Запукскаем fullScreen если он включен в опциях
+        if (_preferences.isFullScreen == true)
+            PreferencesClose();
+
+        _licence = new Licence(_emcID, version.major, version.minor, CreateLicense);
+        var data:XML = LocalStore.inctance.LoadBook();
+
+        if (_licence.isActivate == true && data != null)
+        {
+           if (this._isLicenceActive == true)
+           {
+               _emc.Load(data);
+               if (this._isTrial == false)
+               {
+                  //Запоминаем версию XML
+                  this._currentXMLVersion = _emc.version;
+               }
+           }
+
+          // проверка на наличие обновления
+          UpdateCheck();
+
+          comboBoxWeek.dataProvider = _emc.units;
+          comboBoxWeek.labelField = "title";
+
+          comboBoxDay.dataProvider = (comboBoxWeek.selectedItem as Unit).activitys;
+          comboBoxDay.labelField = "title";
+
+          if (_preferences.isFirstTimeAccessed == false)
+            SelectNextUnfinishedLesson(_preferences.lastActivityID);
+          else
+            FirstTimeAccessed();
+        }
+        else if (_licence.isActivate == true && data == null)
+          LoadXML();
+      }
+
+      private function CreationComplete_quizControlHandler(event:FlexEvent):void
+      {
+        quizControl.activityControl.addEventListener(ActivityControlEvent.CONTINUE, Continue_quizControl);
+      }
+
+      private function Initialize(event:FlexEvent):void
+      {
+        if (this._isLicenceActive == false)
+             _emc.LoadXML('data/books/EMC_580.xml');
+
+        // set color for accordion headers textSelectedColor
+        accordion.getHeaderAt(0).setStyle("color", textBeginLessonColor);
+        accordion.getHeaderAt(0).setStyle("textRollOverColor", textBeginLessonColor);
+        accordion.getHeaderAt(0).setStyle("textSelectedColor", textBeginLessonColor);
+
+        accordion.getHeaderAt(1).setStyle("color", textLessonHistoryColor);
+        accordion.getHeaderAt(1).setStyle("textRollOverColor", textLessonHistoryColor);
+        accordion.getHeaderAt(1).setStyle("textSelectedColor", textLessonHistoryColor);
+
+        accordion.getHeaderAt(2).setStyle("color", textAboutColor);
+        accordion.getHeaderAt(2).setStyle("textRollOverColor", textAboutColor);
+        accordion.getHeaderAt(2).setStyle("textSelectedColor", textAboutColor);
+      }
+
+      private function Change_comboBoxWeek(event:ListEvent):void
+      {
+        var week:Unit = comboBoxWeek.selectedItem as Unit;
+
+        comboBoxWeek.dataProvider = _emc.units;
+        comboBoxWeek.labelField = "title";
+        comboBoxWeek.selectedItem = week;
+
+        comboBoxDay.dataProvider = week.activitys;
+        comboBoxDay.labelField = "title";
+        comboBoxDay.enabled = true;
+
+        btnBegin.enabled = true;
+      }
+
+      private function Click_btnBegin(event:MouseEvent):void
+      {
+        ShowQuizControl(comboBoxDay.selectedItem as Activity);
+      }
+
+      private function ItemClick_MainMenuBar(event:MenuEvent):void
+      {
+        if (event.item.@id == "helpLink")
+            PdfWindow.Show(this);
+        else if (event.item.@id == "gradeLevels")
+          navigateToURL(new URLRequest(_linkOtherGradeLevels));
+        else if (event.item.@id == "otherFormat")
+          navigateToURL(new URLRequest(_linkOtherFormat));
+        else if (event.item.@id == "preferences")
+          PreferencesWindow.Show(this, _preferences, PreferencesClose);
+        else if (event.item.@id == "about")
+          AboutWindow.Show(this, _currentAPPVersion);
+        else if (event.item.@id == "mainMenu")
+          currentState =  state_main;
+        else if (event.item.@id == "checkForUpdates")
+          UpdateCheck();
+        else if (event.item.@id == "support")
+          navigateToURL(new URLRequest("http://www.evan-moor.com/Help/Default.aspx"));
+        else if (event.item.@id == "quit")
+          close();
+      }
+
+      private function Continue_quizControl(event:ActivityControlEvent):void
+      {
+        currentState = state_main;
+        // сохраняем результат
+        event.activity.date = new Date();
+        UpdateLessonHistory();
+
+        // запоминаем ID последнего урока
+        _preferences.lastActivityID = event.activity.ID;
+
+        _preferences.isFirstTimeAccessed = false;
+
+        if (_preferences.quickLaunch == true)
+          SelectNextUnfinishedLesson(event.activity.ID);
+      }
+
+      private function CloseHandler(event:Event):void
+      {
+        var results:XML = _emc.AsXML();
+
+        LocalStore.inctance.SaveResults(results);
+        LocalStore.inctance.SavePreferences(_preferences.AsXML());
+      }
+
+      private function Click_btnClearHistoryHandler(event:MouseEvent):void
+      {
+        for each (var activity:Activity in _emc.activityes)
+          activity.date = null;
+        LocalStore.inctance.RemoveResults();
+
+        _preferences.lastActivityID = 0;
+
+        UpdateLessonHistory();
+
+        FirstTimeAccessed();
+      }
+
+      private function Click_buttonQuitHandler(event:MouseEvent):void
+      {
+        close();
+      }
+
+      private function Click_btnPrintHandler(event:MouseEvent):void
+      {
+        var printJob:FlexPrintJob = new FlexPrintJob();
+        if (printJob.start())
+        {
+          var thePrintView:FormPrintView = new FormPrintView();
+          Application.application.addChild(thePrintView);
+
+
+          thePrintView.width = printJob.pageWidth;
+          thePrintView.height = printJob.pageHeight;
+
+          thePrintView.prodTotal = _emc.activityes.length;
+
+          thePrintView.myDataGrid.dataProvider = dgLessonHistory.dataProvider;
+
+          thePrintView.showPage("single");
+
+          if(!thePrintView.myDataGrid.validNextPage)
+          {
+            printJob.addObject(thePrintView);
+          }
+          else
+          {
+            thePrintView.showPage("first");
+            printJob.addObject(thePrintView);
+            thePrintView.pageNumber++;
+
+            while(true)
+            {
+              thePrintView.myDataGrid.nextPage();
+              thePrintView.showPage("last");
+
+              if(!thePrintView.myDataGrid.validNextPage)
+              {
+                printJob.addObject(thePrintView);
+                break;
+              }
+              else
+              {
+                thePrintView.showPage("middle");
+                printJob.addObject(thePrintView);
+                thePrintView.pageNumber++;
+              }
+            }
+          }
+
+          Application.application.removeChild(thePrintView);
+        }
+
+        printJob.send();
+      }
+
+      private function rollOver_buttonHandler(event:MouseEvent):void
+      {
+        if ((event.target as UIComponent).enabled)
+          _cursorID = CursorManager.setCursor(_fingerCursor);
+      }
+
+      private function rollOut_buttonHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorID);
+      }
+
+      private function mouseMove_accordionHandler(event:MouseEvent):void
+      {
+        if (event.target is AccordionHeader && _cursorAccordionID != CursorManager.currentCursorID)
+          _cursorAccordionID = CursorManager.setCursor(_fingerCursor);
+        else if ((event.target is AccordionHeader) == false)
+          CursorManager.removeCursor(_cursorAccordionID);
+      }
+
+      private function rollOut_accordionHandler(event:MouseEvent):void
+      {
+        CursorManager.removeCursor(_cursorAccordionID);
+      }
+
+
+      /**
+      * Initialization
+      */
+        private function ClickOtherGradeLevels():void
+        {
+          navigateToURL(new URLRequest(_linkOtherGradeLevels));
+        }
+
+        private function ClickStudentPracticeBooks():void
+        {
+          navigateToURL(new URLRequest(_linkPracticeBooks));
+        }
+
+        private function ClickOtherformats():void
+        {
+          navigateToURL(new URLRequest(_linkOtherFormat));
+        }
+
+        private function ClickOtherInteractiveTitles():void
+        {
+          navigateToURL(new URLRequest(_linkOtherInteractiveApplication));
+        }
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      /**
+      * Public members/properties
+      */
+      public function get Title():String
+      {
+        return nativeWindow.title;
+      }
+
+      public function get emcID():int
+      {
+        return _emcID;
+      }
+
+      public function get isTrial():Boolean
+      {
+        return _isTrial;
+      }
+
+      public function get iconApp():String
+      {
+        return "style/images/icon/"+_numberImage+"/128.png";
+      }
+
+
+      /**
+      * Public methods
+      */
+
+
+
+    ]]>
+  </mx:Script>
+
+  <mx:Style source="style/style.css"/>
+
+  <mx:transitions>
+    <mx:Transition fromState="{state_main}" toState="{state_quiz}">
+      <mx:Fade target="{quizControl}" alphaFrom="0" alphaTo="1"/>
+    </mx:Transition>
+    <mx:Transition fromState="{state_quiz}" toState="{state_main}">
+      <mx:Fade target="{quizControl}" alphaFrom="1" alphaTo="0" duration="1000"/>
+    </mx:Transition>
+  </mx:transitions>
+
+    <mx:Sequence target="{this}" id="centerAndResizeApplication">
+       <mx:Resize id="resizeApplication" />
+    </mx:Sequence>
+
+
+  <mx:states>
+    <mx:State name="state_menu">
+    <mx:AddChild relativeTo="{this}" creationPolicy="all">
+          <mx:Box id="boxFullScreenHolder" width="100%" height="100%" borderColor="#B7BABC" horizontalAlign="center" verticalAlign="middle"/>
+    </mx:AddChild>
+    <mx:AddChild relativeTo="{boxFullScreenHolder}" creationPolicy="all">
+          <mx:Canvas id="mainCanvasHolder" height="640" width="810"  verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundAlpha="0" />
+    </mx:AddChild>
+    <mx:AddChild relativeTo="{mainCanvasHolder}" creationPolicy="all">
+      <mx:Image source="{_numberBkg}" width="100%" height="100%"/>
+    </mx:AddChild>
+      <mx:AddChild relativeTo="{mainCanvasHolder}" creationPolicy="all">
+        <mx:MenuBar id="MainMenuBar" labelField="@label" height="25" width="808" fillAlphas="[1,1]"
+          fillColors="[0xFFFFFF, 0xEEEEEE]" fontWeight="bold" color="#555555" x="0" itemClick="ItemClick_MainMenuBar(event)">
+              <mx:XMLList>
+                  <menuitem label="File">
+                      <menuitem id="mainMenu" label="Main menu"/>
+                      <menuitem id="quit" label="Quit"/>
+                  </menuitem>
+                  <menuitem label="Style">
+                    <menuitem label="Preferences" id="preferences"/>
+                  </menuitem>
+                  <menuitem label="Help">
+                      <menuitem label="Daily Language Review teacher’s guide" id="helpLink"/>
+                      <menuitem label="See other grade levels" id="gradeLevels"/>
+                      <menuitem label="See other formats" id="otherFormat"/>
+                      <menuitem label="Check for updates" id="checkForUpdates" />
+                      <menuitem label="Online support" id="support"/>
+                      <menuitem type="separator"/>
+                      <menuitem label="About" id="about"/>
+                  </menuitem>
+              </mx:XMLList>
+          </mx:MenuBar>
+      </mx:AddChild>
+    </mx:State>
+
+
+
+    <mx:State name="{state_main}" basedOn="state_menu">
+      <mx:AddChild creationPolicy="all" relativeTo="{mainCanvasHolder}">
+
+        <mx:Accordion verticalGap="12" id="accordion" x="261" y="31" width="535" height="400" styleName="accordion"
+          mouseMove="mouseMove_accordionHandler(event)" rollOut="rollOut_accordionHandler(event)">
+          <mx:VBox label="Begin Lesson" width="100%" height="100%" icon="{iconBeginLesson}" id="boxBeginLesson" borderColor="#FFFFFF" themeColor="#FFFFFF"
+            borderStyle="none" borderThickness="0">
+            <mx:Canvas  backgroundColor="#ffffff" width="100%" height="100%"  color="#697F92" borderColor="#FFFFFF">
+              <mx:ComboBox id="comboBoxWeek" width="414" height="37" styleName="comboBox"
+                fillAlphas="[1.0, 1.0, 1.0, 1.0]" x="77" y="10" change="Change_comboBoxWeek(event)">
+              </mx:ComboBox>
+
+              <mx:ComboBox id="comboBoxDay" width="414" height="37" styleName="comboBox"
+                fillAlphas="[1.0, 1.0, 1.0, 1.0]" y="72" x="77" rowCount="7">
+              </mx:ComboBox>
+
+              <mx:Button id="btnBegin" label="Begin" height="46" styleName="button" fillAlphas="[1.0, 1.0, 1.0, 1.0]"
+                x="331" y="117" click="Click_btnBegin(event)" rollOver="rollOver_buttonHandler(event)"
+                rollOut="rollOut_buttonHandler(event)"/>
+
+            </mx:Canvas>
+          </mx:VBox>
+          <mx:VBox label="Lesson History" icon="{iconLessonHistory}" width="100%" height="100%" id="boxLessonHistory" themeColor="#FFFFFF">
+            <mx:Canvas backgroundColor="#ffffff" y="10" width="100%" height="100%">
+              <mx:DataGrid x="10" y="10" width="515" height="151" fontFamily="Arial" fontSize="10" dataProvider="{lessonHistoryDataProvider}"
+                id="dgLessonHistory" styleName="LessonHistory" selectionColor="#FFFFFF" creationComplete="{UpdateLessonHistory()}">
+                <mx:columns>
+                  <mx:DataGridColumn headerText="Week" dataField="week" sortable="false" draggable="false" width="170" resizable="false"/>
+                  <mx:DataGridColumn headerText="Lesson" dataField="lesson" sortable="false" draggable="false" resizable="false"/>
+                  <mx:DataGridColumn headerText="Date of Last Lesson" dataField="date" sortable="false" draggable="false" resizable="false"/>
+                  <mx:DataGridColumn headerText="" dataField="begin" id="lnkBtnBegin" sortable="false" draggable="false" resizable="false"
+                    itemRenderer="Controls.ItemRenderers.LessonHistoryLinkButton"/>
+                </mx:columns>
+              </mx:DataGrid>
+              <mx:Button x="435" y="169" label="Clear" fontSize="10" id="btnClearHistory" width="90" height="19"
+                styleName="ClearHistory" click="Click_btnClearHistoryHandler(event)" rollOver="rollOver_buttonHandler(event)"
+                rollOut="rollOut_buttonHandler(event)"/>
+              <mx:Button x="335" y="169" label="Print" fontSize="10" id="btnPrint" width="90" height="19"
+                styleName="ClearHistory" click="Click_btnPrintHandler(event)" rollOver="rollOver_buttonHandler(event)"
+                rollOut="rollOut_buttonHandler(event)" />
+            </mx:Canvas>
+          </mx:VBox>
+          <mx:VBox label="How it Works" icon="{iconAbout}" width="100%" height="100%" id="boxAbout" themeColor="#FFFFFF" x="1" y="73" >
+            <mx:Canvas backgroundColor="#ffffff" width="100%" height="197" >
+            <mx:Text id="AboutMainText" htmlText="{aboutMainText}" x="10" y="0"
+              width="515" height="114" fontSize="12" fontFamily="Arial"  selectable="false" fontAntiAliasType="advanced" fontSharpness="0"
+              fontThickness="0" fontGridFitType="pixel"/>
+            <mx:LinkButton x="10" y="127" label="• other grade levels" fontSize="10" color="#FFCA08" click="ClickOtherGradeLevels()" />
+            <mx:LinkButton x="10" y="172" label="• other interactive titles" fontSize="10" color="#FFCA08"  click="ClickOtherInteractiveTitles()"/>
+            <mx:LinkButton x="10" y="142" label="• student practice books" fontSize="10" color="#FFCA08" click="ClickStudentPracticeBooks()"/>
+            <mx:LinkButton x="11" y="157" label="• other formats" fontSize="10" color="#FFCA08" click="ClickOtherformats()"/>
+            <mx:Label x="10" y="116" text="More:" fontSize="10" color="#FFCA08" fontWeight="bold"/>
+            </mx:Canvas>
+          </mx:VBox>
+        </mx:Accordion>
+      </mx:AddChild>
+      <mx:AddChild relativeTo="{mainCanvasHolder}" creationPolicy="all">
+        <mx:Button x="261" y="441" label="Quit" width="535" height="74" id="btnQuit" styleName="buttonQuit" click="Click_buttonQuitHandler(event)"
+          rollOver="rollOver_buttonHandler(event)" rollOut="rollOut_buttonHandler(event)"/>
+      </mx:AddChild>
+
+    </mx:State>
+
+    <mx:State name="{state_quiz}" basedOn="state_menu">
+      <mx:AddChild relativeTo="{mainCanvasHolder}" creationPolicy="all">
+        <ns2:QuizControl x="0" y="25" id="quizControl" creationPolicy="all" creationComplete="CreationComplete_quizControlHandler(event)"/>
+      </mx:AddChild>
+    </mx:State>
+  </mx:states>
+</mx:WindowedApplication>

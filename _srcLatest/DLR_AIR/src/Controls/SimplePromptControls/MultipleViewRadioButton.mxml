@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BaseUIControl  xmlns="Controls.PromptControls.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+            implements="interfaces.IFontStyle, interfaces.IResult"
+            creationComplete="creationCompleteHandler(event)" 
+            verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+            width="100%" xmlns:Enviroment="Controls.Enviroment.*">
+
+  <mx:Metadata>
+    [Event(name = "creationComplete", type = "flash.events.FlexEvent")]
+  </mx:Metadata>
+
+  <mx:Script>
+    <![CDATA[
+		import Controls.ActivityControl;
+		import Controls.AnswerControls.AnswerControl;
+		import Controls.AnswerControls.SingleAnswerControl;
+		import Controls.PromptControls.MultipleChoiceControl;
+		
+		import Model.Answers.Answer;
+		import Model.Answers.SingleAnswer;
+		import Model.EmbededData;
+		import Model.EnumRegExp;
+		import Model.FactoryRegExp;
+		
+		import interfaces.IBasePrompt;
+		
+		import mx.controls.RadioButtonGroup;
+		import mx.core.UIComponent;
+		import mx.events.FlexEvent;
+		import mx.events.ResizeEvent;
+		import mx.rpc.events.HeaderEvent;
+      /***************************************************************
+      *
+      *  Module Name:
+      *     Controls\SimplePromptControls\MultipleViewRadioButton.mxml
+      *
+      *  Abstract:
+      *     This is control for multiple-view radio button
+      *
+      *  Author:
+      *     Evgenij Welikij   22-October-2009
+      *
+      *  Revision History:
+      *
+      ***************************************************************/
+
+
+      /**
+      * Static
+      */
+
+
+      /**
+      * Private members/properties
+      */
+      protected var _group:RadioButtonGroup;
+
+      private const state_radioButton:String = "state_radioButton";
+      private const state_correct:String = "state_correct";
+      private const state_incorrect:String = "state_incorrect";
+      private const state_default:String = "state_default";
+
+      private var _answer:Answer;
+
+      [Bindable]
+      private var _fntSize:int;
+    
+
+      [Bindable]
+      private var _rbY:int = 0;
+      //Загружаем ли мы ответы пользователя в данный момент или нет
+      private var _isDeserialize:Boolean = false; 
+
+      /**
+      * Private methods
+      */
+
+
+      /**
+      * Events handler
+      */
+      private function Click_rbVariant(event:MouseEvent):void
+      {
+        //для того что б нельзя было переключать когда контрол переходит в следуещее состояние
+        if (this.currentState != state_default && rbVariant.selected == false)
+        {
+            rbVariant.selected = true;
+        }
+      }
+
+      private function creationCompleteHandler(event:FlexEvent):void
+      {
+         var textlineMetrics:TextLineMetrics = txVariantText.measureText(txVariantText.text);
+         _rbY = (textlineMetrics.height/2) - rbVariant.height/2 + 2;
+      }
+
+      private function Change_rbVariantHandler(event:Event = null ):void
+      {
+        var fontWeight:String = rbVariant.selected ? "bold" : "normal";
+        txVariantText.setStyle("fontWeight", fontWeight);
+      }
+
+
+      /**
+      * Initialization
+      */
+
+
+      /**
+      * Constructor
+      */
+
+
+      /**
+      * Virtuals methods
+      */
+
+
+      public override function FontName():void
+      {
+        txVariantText.setStyle("fontFamily", _fontName);
+        lbCorrect.setStyle("fontFamily", _fontName);
+        lbIncorrect.setStyle("fontFamily", _fontName);
+        lbDefault.setStyle("fontFamily", _fontName);
+        visibleAnswer.setStyle("fontFamily", _fontName);
+
+        var textlineMetrics:TextLineMetrics = txVariantText.measureText(txVariantText.text);
+         _rbY = (textlineMetrics.height/2) - rbVariant.height/2 + 2;
+      }
+
+      public override function FontSize():void
+      {
+        _fntSize = _fontSize;
+        txVariantText.setStyle("fontSize", _fontSize);
+        lbCorrect.setStyle("fontSize", _fontSize);
+        lbIncorrect.setStyle("fontSize", _fontSize);
+        lbDefault.setStyle("fontSize", _fontSize);
+        visibleAnswer.setStyle("fontSize", _fontSize);
+
+        var textlineMetrics:TextLineMetrics = txVariantText.measureText(txVariantText.text);
+        _rbY = (textlineMetrics.height/2) - rbVariant.height/2 + 2;
+      }
+
+      public override function FontColor():void
+      {
+        txVariantText.setStyle("color", _fontColor);
+        lbDefault.setStyle("color", _fontColor);
+      }
+
+      public override function Bold():void
+      {
+      }
+
+      public override function SetCorrect():void
+      {
+        if (_answer.isCorrect)
+          rbVariant.selected = true;
+
+        txVariantText.setStyle("fontWeight", "normal");
+
+        if (_answer is SingleAnswer)
+        {
+          if (this._answer != null && (this._answer as SingleAnswer).VisibleAnswer  != '')
+            visibleAnswer.text = (this._answer as SingleAnswer).VisibleAnswer;
+        }
+        //lbCorrect.htmlText =  txVariantText.htmlText;
+        lbCorrect.htmlText = _answer.text;
+        lbCorrect.htmlText = lbCorrect.htmlText.replace(FactoryRegExp.instance.BR(EnumRegExp.G),'\n');
+        //Вырезаем из строки параметр COLOR, SIZE и теги <B></B> чтоб можно было менять размер и цвет
+        //lbCorrect.htmlText = lbCorrect.htmlText.replace(new RegExp("(SIZE\\s*?=\\s*?\"[0-9]+\")|(COLOR\\s*?=\\s*?\".*?\")|<B>|</B>",'g'),'');
+        currentState = state_correct;
+      }
+
+      public override function SetIncorrect():void
+      {
+        currentState = state_incorrect;
+        txVariantText.setStyle("fontWeight", "normal");
+      }
+
+      public override function GetText():String
+      {
+        //непонятно зачем сдесь текст, поэтому пока закометил 
+        //return rbVariant.selected ? txVariantText.text : null;
+        if (rbVariant.selected)
+            return " ";
+        else 
+            return null;    
+      }
+
+      public override function Init(answer:IBasePrompt):void
+      {
+        this._answer = answer as Answer;
+        txVariantText.htmlText = _answer.text;
+        txVariantText.htmlText = txVariantText.htmlText.replace(FactoryRegExp.instance.BR(EnumRegExp.G),'\n');
+      }
+
+      public override function IsComplete():Boolean
+      {
+        if (ActivityControl.isCheckAnswer == false)
+          return true;
+
+        return rbVariant.selected;
+      }
+
+      public override function Continue():void
+      {
+      }
+
+      public override function DefaultFont():void
+      {
+        _fontName = "EMComic";
+        txVariantText.setStyle("fontFamily", "EMComic");
+        lbCorrect.setStyle("fontFamily", "EMComic");
+        visibleAnswer.setStyle("fontFamily", "EMComic");
+        lbIncorrect.setStyle("fontFamily", "EMComic");
+        lbDefault.setStyle("fontFamily", "EMComic");
+
+        var textlineMetrics:TextLineMetrics = txVariantText.measureText(txVariantText.text);
+        _rbY = (textlineMetrics.height/2) - rbVariant.height/2 + 2;
+      }
+
+       //Сохраняем данные которые ввел пользователь 
+      public override function SaveResults():void
+      {
+        if (rbVariant.selected)
+            this._answer.result = true;
+        else 
+            this._answer.result = false;            
+      }
+      
+      //Загружаем данные которые ввел пользователь 
+      public override function LoadResults(needCheckAnswer:Boolean = false):void
+      {
+        if (this._answer.result == true)
+            rbVariant.selected = true;
+        else 
+            rbVariant.selected = false;
+      }
+      
+      /**
+      * Public members/properties
+      */
+      public function set group(value:RadioButtonGroup):void
+      {
+        this._group = value;
+        rbVariant.group = value;
+      }
+
+
+      /**
+      * Public methods
+      */
+      public function SetDefault():void
+      {
+        // отписываемся от подсвечивания текста жирным
+        txVariantText.removeEventListener(MouseEvent.CLICK, Click_rbVariant);
+        rbVariant.removeEventListener(MouseEvent.CLICK, Change_rbVariantHandler);
+        currentState = state_default;
+      }
+
+      public function selected(selected:Boolean):void
+      {
+        if (selected == true)
+            txVariantText.setStyle("fontWeight", "bold");
+        else
+            txVariantText.setStyle("fontWeight", "normal");
+      }
+
+
+    ]]>
+  </mx:Script>
+
+  <states>
+    <mx:State name="{state_correct}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox horizontalGap="0" verticalAlign="middle" width="100%">
+          <mx:Image source="{EmbededData.inctance.iconCorrect}" id="imgCorrect" width="{_fontSize}" height="{_fontSize}"/>
+          <Enviroment:TextExended id="lbCorrect" color="#00c35f" selectable="false"  width="100%"/>
+          <mx:Spacer width="10%" />
+          <mx:Text id="visibleAnswer" color="#858586" selectable="false" width="100%" />
+        </mx:HBox>
+      </mx:AddChild>
+      
+      <mx:RemoveChild target="{hBox}"/>
+    </mx:State>
+
+    <mx:State name="{state_incorrect}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:HBox horizontalGap="0" verticalAlign="middle" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="100%">
+          <mx:Image source="{EmbededData.inctance.iconIncorrect}" id="imgIncorrect" width="{_fontSize}" height="{_fontSize}"/>
+          <Enviroment:TextExended id="lbIncorrect" color="#e54e49" selectable="false" text="{txVariantText.text}" width="{txVariantText.width}"/>
+        </mx:HBox>
+      </mx:AddChild> 
+      
+      <mx:RemoveChild target="{hBox}"/>
+    </mx:State>
+
+    <mx:State name="{state_default}">
+      <mx:AddChild relativeTo="{this}" creationPolicy="all">
+        <mx:Text id="lbDefault" selectable="false" htmlText="{txVariantText.htmlText}" left="{_fntSize}"
+          fontWeight="normal" width="{txVariantText.width}"/>
+      </mx:AddChild>
+      
+      <mx:RemoveChild target="{hBox}"/>
+    </mx:State> 
+  </states>
+
+  <mx:HBox  id="hBox" verticalScrollPolicy="off" horizontalScrollPolicy="off" direction="horizontal" verticalAlign="middle" width="100%">
+    <mx:Canvas height="100%" >
+      <mx:RadioButton id="rbVariant" valueCommit="Change_rbVariantHandler(event)" y="{this._rbY}" />
+    </mx:Canvas>
+    <Enviroment:TextExended id="txVariantText" selectable="false" click="Click_rbVariant(event)" width="100%" />
+ </mx:HBox>
+
+</BaseUIControl>
